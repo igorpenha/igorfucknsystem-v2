@@ -89,10 +89,10 @@ const Index = () => {
   return (
     <>
       {loading && <LoadingScreen onComplete={() => setLoading(false)} />}
-      <div className="bg-background hud-grid relative overflow-auto mx-auto" style={{ width: '1920px', height: '1080px' }}>
+      <div className="bg-background hud-grid relative overflow-hidden w-screen h-screen flex flex-col">
         <SpaceBackground />
         {/* Header */}
-        <header className="border-b border-border px-4 md:px-8 py-2 flex items-center justify-between relative z-10">
+        <header className="border-b border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">
           <div className="flex items-center gap-4">
             <HeaderGlitchLogo />
             <div>
@@ -108,9 +108,9 @@ const Index = () => {
         </header>
 
         {/* Main Content */}
-        <main className="p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-4 relative z-10 lg:grid-rows-[auto]">
+        <main className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-3 relative z-10 flex-1 min-h-0 overflow-hidden">
           {/* Left Column - File Menu */}
-          <div className="lg:col-span-3 flex flex-col gap-4">
+          <div className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
             <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp}>
               <HudPanel title="Arquivos">
                 <FileMenu
@@ -134,7 +134,7 @@ const Index = () => {
           </div>
 
           {/* Center Column - File Viewer */}
-          <div ref={fileViewerRef} className="lg:col-span-6 flex flex-col gap-4 min-h-0">
+          <div ref={fileViewerRef} className="lg:col-span-6 flex flex-col gap-3 min-h-0 overflow-hidden">
             <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="flex flex-col flex-1 min-h-0" style={{ height: fileViewerMaxH, maxHeight: fileViewerMaxH } as undefined}>
               <HudPanel title="Lista de Arquivos" className="flex-1 min-h-0 overflow-hidden flex flex-col">
                 <div className="flex-1 overflow-y-auto min-h-0">
@@ -169,7 +169,7 @@ const Index = () => {
           </div>
 
           {/* Right Column */}
-          <div className="lg:col-span-3 flex flex-col gap-4">
+          <div className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
             <motion.div ref={webRadioRef} custom={1} initial="hidden" animate="visible" variants={fadeUp}>
               <HudPanel title="WebRadio">
                 <WebRadio />
@@ -186,7 +186,7 @@ const Index = () => {
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-border px-4 md:px-8 py-3 flex items-center justify-between relative z-10">
+        <footer className="border-t border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">
           <span className="text-[10px] text-muted-foreground tracking-widest">© 2026 IGOR FUCKN SYSTEM</span>
           <span className="text-[10px] text-muted-foreground tracking-widest">BUILD 2.0.0 // ALL SYSTEMS NOMINAL</span>
         </footer>
