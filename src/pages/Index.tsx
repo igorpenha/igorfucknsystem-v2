@@ -89,7 +89,7 @@ const Index = () => {
   return (
     <>
       {loading && <LoadingScreen onComplete={() => setLoading(false)} />}
-      <div className="min-h-screen bg-background hud-grid relative overflow-hidden">
+      <div className="bg-background hud-grid relative overflow-auto mx-auto" style={{ width: '1920px', height: '1080px' }}>
         <SpaceBackground />
         {/* Header */}
         <header className="border-b border-border px-4 md:px-8 py-2 flex items-center justify-between relative z-10">
