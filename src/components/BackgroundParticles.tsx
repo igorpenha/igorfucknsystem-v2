@@ -17,17 +17,12 @@ const BackgroundParticles = () => {
     window.addEventListener("resize", resize);
 
     interface Particle {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      size: number;
-      alpha: number;
-      hue: number;
+      x: number; y: number; vx: number; vy: number;
+      size: number; alpha: number; hue: number;
     }
 
     const particles: Particle[] = [];
-    const PARTICLE_COUNT = 60;
+    const PARTICLE_COUNT = 50;
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       particles.push({
@@ -37,7 +32,7 @@ const BackgroundParticles = () => {
         vy: -0.3 - Math.random() * 0.7,
         size: Math.random() * 2 + 0.5,
         alpha: Math.random() * 0.5 + 0.1,
-        hue: 190 + Math.random() * 30,
+        hue: Math.random() > 0.5 ? 190 : 320, // Cyan or Magenta
       });
     }
 
@@ -51,6 +46,7 @@ const BackgroundParticles = () => {
         if (p.y < -10) {
           p.y = canvas.height + 10;
           p.x = Math.random() * canvas.width;
+          p.hue = Math.random() > 0.5 ? 190 : 320;
         }
         if (p.x < -10) p.x = canvas.width + 10;
         if (p.x > canvas.width + 10) p.x = -10;
@@ -60,7 +56,6 @@ const BackgroundParticles = () => {
         ctx.fillStyle = `hsla(${p.hue}, 100%, 60%, ${p.alpha})`;
         ctx.fill();
 
-        // Tail
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(p.x - p.vx * 8, p.y - p.vy * 8);
