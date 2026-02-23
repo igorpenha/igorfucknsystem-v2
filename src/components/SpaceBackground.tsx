@@ -18,8 +18,10 @@ const SpaceBackground = () => {
     let currentSpeed = BASE_SPEED;
     let targetSpeed = BASE_SPEED;
     let radioPlaying = false;
-    let stars: { x: number; y: number; z: number; size: number; opacity: number }[] = [];
-    const STAR_COUNT = 200;
+
+    interface Star { x: number; y: number; z: number; size: number; opacity: number; isMagenta: boolean; }
+    const stars: Star[] = [];
+    const STAR_COUNT = 180;
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -35,19 +37,20 @@ const SpaceBackground = () => {
         z: Math.random() * 1000,
         size: Math.random() * 1.5 + 0.5,
         opacity: Math.random() * 0.6 + 0.2,
+        isMagenta: Math.random() > 0.6,
       });
     }
+
+    // Grid animation offset
+    let gridOffset = 0;
 
     const onRadioState = (e: Event) => {
       radioPlaying = (e as CustomEvent).detail?.playing;
       if (!radioPlaying) targetSpeed = BASE_SPEED;
     };
-
     const onRadioEnergy = (e: Event) => {
       const energy = (e as CustomEvent).detail?.energy ?? 0;
-      if (radioPlaying) {
-        targetSpeed = BASE_SPEED + energy * (MAX_SPEED - BASE_SPEED);
-      }
+      if (radioPlaying) targetSpeed = BASE_SPEED + energy * (MAX_SPEED - BASE_SPEED);
     };
 
     window.addEventListener("radio-state", onRadioState);
@@ -60,17 +63,56 @@ const SpaceBackground = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
+      const w = canvas.width;
+      const h = canvas.height;
 
       const speedRatio = Math.min((currentSpeed - BASE_SPEED) / (MAX_SPEED - BASE_SPEED), 1);
       const streakMode = currentSpeed > 0.4;
 
+      // === SYNTHWAVE GRID FLOOR ===
+      const gridY = h * 0.7;
+      const gridH = h - gridY;
+      gridOffset = (gridOffset + currentSpeed * 0.8) % 40;
+
+      ctx.save();
+      // Horizontal lines with perspective
+      const lineCount = 15;
+      for (let i = 0; i <= lineCount; i++) {
+        const t = i / lineCount;
+        const perspY = gridY + gridH * Math.pow(t, 0.6);
+        const alpha = 0.06 + t * 0.12;
+        ctx.beginPath();
+        ctx.moveTo(0, perspY + gridOffset * t * 0.5);
+        ctx.lineTo(w, perspY + gridOffset * t * 0.5);
+        ctx.strokeStyle = `hsla(320, 100%, 50%, ${alpha})`;
+        ctx.lineWidth = 0.5 + t * 0.5;
+        ctx.stroke();
+      }
+      // Vertical converging lines
+      const vLines = 20;
+      for (let i = 0; i <= vLines; i++) {
+        const t = i / vLines;
+        const topX = cx + (t - 0.5) * w * 0.3;
+        const botX = t * w;
+        const alpha = 0.04 + Math.abs(t - 0.5) * 0.08;
+        ctx.beginPath();
+        ctx.moveTo(topX, gridY);
+        ctx.lineTo(botX, h);
+        ctx.strokeStyle = `hsla(190, 100%, 50%, ${alpha})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // === STARS ===
       for (const star of stars) {
         const prevZ = star.z;
         star.z -= currentSpeed;
         if (star.z <= 0) {
           star.z = 1000;
-          star.x = (Math.random() - 0.5) * canvas.width * 2;
-          star.y = (Math.random() - 0.5) * canvas.height * 2;
+          star.x = (Math.random() - 0.5) * w * 2;
+          star.y = (Math.random() - 0.5) * h * 2;
+          star.isMagenta = Math.random() > 0.6;
         }
 
         const sx = (star.x / star.z) * 300 + cx;
@@ -78,7 +120,7 @@ const SpaceBackground = () => {
         const r = (1 - star.z / 1000) * star.size * 2;
         const a = (1 - star.z / 1000) * star.opacity;
 
-        const hue = 190 + Math.sin(star.z * 0.01) * 30;
+        const hue = star.isMagenta ? 320 : 190;
 
         if (streakMode) {
           const trailSteps = speedRatio > 0.5 ? 6 : speedRatio > 0.2 ? 3 : 1;
@@ -99,7 +141,6 @@ const SpaceBackground = () => {
             ctx.stroke();
           }
 
-          // Main bright streak
           const psx = (star.x / prevZ) * 300 + cx;
           const psy = (star.y / prevZ) * 300 + cy;
           ctx.beginPath();
@@ -115,7 +156,6 @@ const SpaceBackground = () => {
         ctx.fillStyle = `hsla(${hue}, 100%, 75%, ${a})`;
         ctx.fill();
 
-        // Glow - bigger at high speed
         if (r > 1) {
           const glowSize = r * (2.5 + speedRatio * 2);
           ctx.beginPath();
