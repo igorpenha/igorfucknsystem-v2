@@ -340,6 +340,11 @@ const SecurityCameraPanel = () => {
         >
           {isAutoRotating ? "⟳ Rotação Auto LIGADA" : "⟳ Rotação Auto"}
         </button>
+        <button
+          className="flex-1 py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 bg-secondary/10 border-secondary/40 text-secondary hover:bg-secondary/20 hover:shadow-[0_0_12px_hsl(var(--secondary)/0.3)]"
+        >
+          ⊞ Acessar Grid
+        </button>
       </div>
     </div>
   );
