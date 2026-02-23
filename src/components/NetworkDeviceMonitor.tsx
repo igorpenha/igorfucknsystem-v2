@@ -36,15 +36,13 @@ const NetworkDeviceMonitor = () => {
   }, []);
 
   return (
-    <HudPanel
-      title="Dispositivos na Rede"
-      headerRight={
+    <HudPanel title="Dispositivos na Rede">
+      <div className="flex justify-end -mt-2 mb-2">
         <span className={`text-[8px] tracking-wider ${online ? "text-neon-green" : "text-destructive"}`}>
           {scanning ? "ESCANEANDO..." : online ? `${devices.length} ATIVOS` : "OFFLINE"}
         </span>
-      }
-    >
-      <div className="p-2">
+      </div>
+      <div>
         {!online ? (
           <div className="flex flex-col items-center py-4 gap-2">
             <WifiOff className="w-5 h-5 text-muted-foreground/30" />

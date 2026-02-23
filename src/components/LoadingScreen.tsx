@@ -1,6 +1,163 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import logoImage from "@/assets/logo.png";
+
+const LOADING_DURATION = 6000;
+const CHARS = "01アイウエオカキクケコサシスセソタチツテトナニスネノハヒフヘホマミムメモヤユヨラリルレロワヲン";
+const COL_WIDTH = 10;
+const FONT_SIZE = 14;
+
+const GlitchLogo = () => {
+  const [glitchActive, setGlitchActive] = useState(false);
+  const [glitchIntensity, setGlitchIntensity] = useState(0);
+
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+
+    const scheduleGlitch = () => {
+      const stableTime = 1200 + Math.random() * 2000;
+      timeout = setTimeout(() => {
+        const intensity = Math.random() < 0.3 ? 3 : Math.random() < 0.6 ? 2 : 1;
+        setGlitchIntensity(intensity);
+        setGlitchActive(true);
+
+        const burstDuration = intensity === 3 ? 300 + Math.random() * 200 : 100 + Math.random() * 150;
+        timeout = setTimeout(() => {
+          setGlitchActive(false);
+          scheduleGlitch();
+        }, burstDuration);
+      }, stableTime);
+    };
+
+    // Initial short glitch
+    setTimeout(() => {
+      setGlitchIntensity(2);
+      setGlitchActive(true);
+      setTimeout(() => {
+        setGlitchActive(false);
+        scheduleGlitch();
+      }, 250);
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  const offsetX = glitchActive ? (Math.random() - 0.5) * glitchIntensity * 6 : 0;
+  const offsetY = glitchActive ? (Math.random() - 0.5) * glitchIntensity * 3 : 0;
+  const skewX = glitchActive ? (Math.random() - 0.5) * glitchIntensity * 2 : 0;
+
+  return (
+    <div className="relative mb-0 w-[270px] h-[270px] md:w-[374px] md:h-[374px] overflow-hidden">
+      {/* Base logo */}
+      <motion.img
+        src={logoImage}
+        alt="Logo"
+        className="absolute inset-0 w-full h-full object-contain"
+        animate={{
+          x: offsetX,
+          y: offsetY,
+          skewX: skewX,
+        }}
+        transition={{ duration: 0.02 }}
+      />
+
+      {/* Red channel shift */}
+      <motion.img
+        src={logoImage}
+        alt=""
+        className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+        style={{ mixBlendMode: "screen" }}
+        animate={{
+          x: glitchActive ? glitchIntensity * 4 + Math.random() * 3 : 0,
+          opacity: glitchActive ? 0.6 : 0,
+          filter: glitchActive ? "hue-rotate(-30deg) saturate(3) brightness(1.2)" : "none",
+          clipPath: glitchActive
+            ? `inset(${Math.random() * 40}% 0% ${Math.random() * 40}% 0%)`
+            : "inset(0% 0% 100% 0%)",
+        }}
+        transition={{ duration: 0.02 }}
+      />
+
+      {/* Cyan channel shift */}
+      <motion.img
+        src={logoImage}
+        alt=""
+        className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+        style={{ mixBlendMode: "screen" }}
+        animate={{
+          x: glitchActive ? -glitchIntensity * 5 - Math.random() * 3 : 0,
+          opacity: glitchActive ? 0.5 : 0,
+          filter: glitchActive ? "hue-rotate(160deg) saturate(2.5) brightness(1.1)" : "none",
+          clipPath: glitchActive
+            ? `inset(${20 + Math.random() * 30}% 0% ${10 + Math.random() * 30}% 0%)`
+            : "inset(0% 0% 100% 0%)",
+        }}
+        transition={{ duration: 0.02 }}
+      />
+
+      {/* Horizontal slice displacement */}
+      {glitchActive && glitchIntensity >= 2 && (
+        <>
+          <motion.img
+            src={logoImage}
+            alt=""
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+            style={{
+              clipPath: `inset(${30 + Math.random() * 20}% 0% ${30 + Math.random() * 20}% 0%)`,
+            }}
+            animate={{
+              x: (Math.random() - 0.5) * glitchIntensity * 12,
+            }}
+            transition={{ duration: 0.01 }}
+          />
+          <motion.img
+            src={logoImage}
+            alt=""
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+            style={{
+              clipPath: `inset(${60 + Math.random() * 15}% 0% ${5 + Math.random() * 15}% 0%)`,
+            }}
+            animate={{
+              x: (Math.random() - 0.5) * glitchIntensity * 10,
+            }}
+            transition={{ duration: 0.01 }}
+          />
+        </>
+      )}
+
+      {/* Scanline flicker overlay */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px)",
+        }}
+        animate={{
+          opacity: glitchActive ? [0.4, 0.8, 0.3] : 0.15,
+        }}
+        transition={{ duration: 0.1 }}
+      />
+
+      {/* Connection loss noise bar */}
+      {glitchActive && glitchIntensity === 3 && (
+        <motion.div
+          className="absolute left-0 right-0 pointer-events-none"
+          style={{
+            top: `${20 + Math.random() * 60}%`,
+            height: `${2 + Math.random() * 6}%`,
+            background: `linear-gradient(90deg,
+              transparent ${Math.random() * 10}%,
+              hsl(190 100% 70% / 0.4) ${10 + Math.random() * 20}%,
+              hsl(300 80% 60% / 0.3) ${40 + Math.random() * 20}%,
+              transparent ${80 + Math.random() * 20}%)`,
+          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 1, 0.5, 0] }}
+          transition={{ duration: 0.15 }}
+        />
+      )}
+    </div>
+  );
+};
 
 const MatrixRain = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -18,33 +175,31 @@ const MatrixRain = () => {
     resize();
     window.addEventListener("resize", resize);
 
-    const chars = "01アイウエオカキクケコサシスセソ";
-    const fontSize = 14;
-    const columns = Math.floor(canvas.width / fontSize);
-    const drops: number[] = Array(columns).fill(0).map(() => Math.random() * -100);
+    const cols = Math.ceil(canvas.width / COL_WIDTH);
+    const drops = Array.from({ length: cols }, () => Math.random() * -50);
 
     const draw = () => {
-      ctx.fillStyle = "rgba(5, 7, 15, 0.12)";
+      ctx.fillStyle = "rgba(5, 7, 10, 0.12)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.font = `${fontSize}px monospace`;
 
-      for (let i = 0; i < columns; i++) {
-        const char = chars[Math.floor(Math.random() * chars.length)];
-        const x = i * fontSize;
-        const y = drops[i] * fontSize;
+      for (let i = 0; i < cols; i++) {
+        const char = CHARS[Math.floor(Math.random() * CHARS.length)];
+        const x = i * COL_WIDTH;
+        const y = drops[i] * FONT_SIZE;
 
-        // Head character brighter
-        ctx.fillStyle = `hsla(190, 100%, 75%, ${0.9})`;
+        ctx.font = `${FONT_SIZE}px 'Share Tech Mono', monospace`;
+        ctx.fillStyle = `hsl(190 100% 75% / 0.9)`;
         ctx.fillText(char, x, y);
 
-        // Trail
-        ctx.fillStyle = `hsla(190, 100%, 40%, 0.3)`;
-        ctx.fillText(char, x, y - fontSize);
+        if (drops[i] > 1) {
+          ctx.fillStyle = `hsl(190 100% 50% / 0.25)`;
+          ctx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], x, y - FONT_SIZE);
+        }
 
-        drops[i] += 0.5 + Math.random() * 0.5;
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.98) {
+        if (y > canvas.height && Math.random() > 0.975) {
           drops[i] = 0;
         }
+        drops[i] += 0.5 + Math.random() * 0.5;
       }
     };
 
@@ -55,133 +210,71 @@ const MatrixRain = () => {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-60" />;
-};
-
-const GlitchLogo = () => {
-  const [glitchActive, setGlitchActive] = useState(false);
-  const [glitchIntensity, setGlitchIntensity] = useState(0);
-
-  useEffect(() => {
-    const scheduleGlitch = () => {
-      const delay = 1500 + Math.random() * 2500;
-      setTimeout(() => {
-        const intensity = 1 + Math.random() * 2;
-        setGlitchIntensity(intensity);
-        setGlitchActive(true);
-        setTimeout(() => {
-          setGlitchActive(false);
-          scheduleGlitch();
-        }, 100 + Math.random() * 200);
-      }, delay);
-    };
-    scheduleGlitch();
-  }, []);
-
   return (
-    <div className="relative w-52 h-52 md:w-72 md:h-72 overflow-hidden">
-      {/* Main logo */}
-      <motion.img
-        src={logoImage}
-        alt="Logo"
-        className="absolute inset-0 w-full h-full object-contain z-10"
-        animate={{
-          x: glitchActive ? (Math.random() - 0.5) * glitchIntensity * 3 : 0,
-          skewX: glitchActive ? (Math.random() - 0.5) * 2 : 0,
-        }}
-        transition={{ duration: 0.02 }}
-      />
-
-      {/* Cyan glitch layer */}
-      <motion.img
-        src={logoImage}
-        alt=""
-        className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
-        style={{ filter: "hue-rotate(90deg) saturate(2.5)", mixBlendMode: "screen" }}
-        animate={{
-          x: glitchActive ? glitchIntensity * 4 : 0,
-          opacity: glitchActive ? 0.6 : 0,
-          clipPath: glitchActive
-            ? `inset(${Math.random() * 40}% 0% ${Math.random() * 40}% 0%)`
-            : "inset(0% 0% 100% 0%)",
-        }}
-        transition={{ duration: 0.02 }}
-      />
-
-      {/* Magenta glitch layer */}
-      <motion.img
-        src={logoImage}
-        alt=""
-        className="absolute inset-0 w-full h-full object-contain z-20 pointer-events-none"
-        style={{ filter: "hue-rotate(-30deg) saturate(3)", mixBlendMode: "screen" }}
-        animate={{
-          x: glitchActive ? -glitchIntensity * 3 : 0,
-          opacity: glitchActive ? 0.5 : 0,
-          clipPath: glitchActive
-            ? `inset(${Math.random() * 50}% 0% ${Math.random() * 30}% 0%)`
-            : "inset(0% 0% 100% 0%)",
-        }}
-        transition={{ duration: 0.02 }}
-      />
-    </div>
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full opacity-60"
+    />
   );
 };
 
-interface LoadingScreenProps {
-  onComplete: () => void;
-}
-
-const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
+const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
-  const startTime = useRef(Date.now());
-  const duration = 6000;
 
   useEffect(() => {
+    const start = Date.now();
     const tick = () => {
-      const elapsed = Date.now() - startTime.current;
-      const p = Math.min(elapsed / duration, 1);
+      const elapsed = Date.now() - start;
+      const p = Math.min(elapsed / LOADING_DURATION, 1);
       setProgress(p);
       if (p < 1) {
         requestAnimationFrame(tick);
       } else {
-        setTimeout(onComplete, 300);
+        setTimeout(onComplete, 400);
       }
     };
     requestAnimationFrame(tick);
   }, [onComplete]);
 
   return (
-    <motion.div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background"
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.8 }}
-    >
-      <MatrixRain />
+    <AnimatePresence>
+      {progress <= 1 && (
+        <motion.div
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background"
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <MatrixRain />
 
-      <div className="relative z-10 flex flex-col items-center gap-8">
-        <GlitchLogo />
+          <GlitchLogo />
 
-        <h1 className="font-display text-2xl md:text-3xl tracking-[0.3em] text-primary">
-          IGORP FUCKN SYSTEM
-        </h1>
+          <motion.h1
+            className="font-display text-sm md:text-base text-foreground text-glow tracking-[0.3em] mb-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            IGOR FUCKN FILES
+          </motion.h1>
 
-        {/* Progress bar */}
-        <div className="w-64 md:w-80">
-          <div className="h-1 bg-muted rounded-full overflow-hidden">
-            <motion.div
-              className="h-full rounded-full"
-              style={{
-                background: "linear-gradient(90deg, hsl(190 100% 50%), hsl(320 100% 50%))",
-                width: `${progress * 100}%`,
-              }}
-            />
+          <div className="w-48 md:w-64 relative">
+            <div className="h-1 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                style={{
+                  background:
+                    "linear-gradient(90deg, hsl(190 100% 50%), hsl(270 80% 60%), hsl(190 100% 50%))",
+                  backgroundSize: "200% 100%",
+                  width: `${progress * 100}%`,
+                }}
+                animate={{ backgroundPosition: ["0% 0%", "200% 0%"] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              />
+            </div>
           </div>
-          <p className="text-center mt-2 text-xs text-muted-foreground tracking-widest">
-            INICIALIZANDO... {Math.floor(progress * 100)}%
-          </p>
-        </div>
-      </div>
-    </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
