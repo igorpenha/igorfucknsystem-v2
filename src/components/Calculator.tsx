@@ -7,19 +7,11 @@ const Calculator = () => {
   const [reset, setReset] = useState(false);
 
   const handleNumber = (n: string) => {
-    if (reset) {
-      setDisplay(n);
-      setReset(false);
-    } else {
-      setDisplay(display === "0" ? n : display + n);
-    }
+    if (reset) { setDisplay(n); setReset(false); }
+    else setDisplay(display === "0" ? n : display + n);
   };
 
-  const handleOp = (o: string) => {
-    setPrev(display);
-    setOp(o);
-    setReset(true);
-  };
+  const handleOp = (o: string) => { setPrev(display); setOp(o); setReset(true); };
 
   const handleEqual = () => {
     if (!prev || !op) return;
@@ -33,16 +25,10 @@ const Calculator = () => {
       case "/": result = b !== 0 ? a / b : 0; break;
     }
     setDisplay(String(result));
-    setPrev(null);
-    setOp(null);
-    setReset(true);
+    setPrev(null); setOp(null); setReset(true);
   };
 
-  const handleClear = () => {
-    setDisplay("0");
-    setPrev(null);
-    setOp(null);
-  };
+  const handleClear = () => { setDisplay("0"); setPrev(null); setOp(null); };
 
   const buttons = [
     ["7", "8", "9", "/"],
@@ -68,7 +54,9 @@ const Calculator = () => {
             }}
             className={`
               py-2 rounded-sm font-display text-sm transition-all duration-150
-              active:scale-95 hover:glow-primary
+              active:scale-95
+              hover:shadow-[0_0_12px_hsl(50,100%,50%/0.4)] hover:border-accent
+              glitch-hover
               ${["+", "-", "*", "/"].includes(btn)
                 ? "bg-secondary/20 text-secondary border border-secondary/30 hover:bg-secondary/30"
                 : btn === "="

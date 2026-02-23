@@ -41,7 +41,6 @@ const AudioVisualizer = ({ analyser, playing }: AudioVisualizerProps) => {
           for (let b = startBin; b < endBin; b++) sum += dataArray[b];
           let avg = sum / ((endBin - startBin) * 255);
 
-          // Gentle high-freq attenuation
           const t = i / BAR_COUNT;
           const highAtten = t > 0.6 ? 1 - (t - 0.6) * 0.5 : 1;
           avg = Math.pow(avg, 0.65) * highAtten;
@@ -61,8 +60,8 @@ const AudioVisualizer = ({ analyser, playing }: AudioVisualizerProps) => {
         const barTop = h - barH;
         const x = i * barW;
 
-        // Gradient from cyan to purple
-        const hue = 190 - (i / BAR_COUNT) * 70;
+        // Magenta → Cyan gradient
+        const hue = 320 - (i / BAR_COUNT) * 130; // 320 (magenta) → 190 (cyan)
         const gradient = ctx.createLinearGradient(x, barTop, x, h);
         gradient.addColorStop(0, `hsla(${hue}, 100%, 65%, ${0.6 + val * 0.4})`);
         gradient.addColorStop(1, `hsla(${hue}, 80%, 25%, 0.2)`);
@@ -80,12 +79,7 @@ const AudioVisualizer = ({ analyser, playing }: AudioVisualizerProps) => {
 
   return (
     <div className="h-16 border-t border-border/30">
-      <canvas
-        ref={canvasRef}
-        width={320}
-        height={64}
-        className="w-full h-full"
-      />
+      <canvas ref={canvasRef} width={320} height={64} className="w-full h-full" />
     </div>
   );
 };

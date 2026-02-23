@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import logoImage from "@/assets/logo.png";
+import logoImage from "@/assets/logo-new.png";
 
 const LOADING_DURATION = 5000;
 
