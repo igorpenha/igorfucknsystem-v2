@@ -326,7 +326,7 @@ const SecurityCameraPanel = () => {
         <button
           onClick={handleStopAll}
           disabled={activeCamera === null && !isAutoRotating}
-          className="flex-1 py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 bg-destructive/20 border-destructive/60 text-destructive hover:bg-destructive/30 hover:shadow-[0_0_12px_hsl(0,80%,55%/0.4)] disabled:cursor-not-allowed disabled:hover:shadow-none disabled:opacity-30"
+          className="flex-1 py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 bg-[hsl(0,70%,40%/0.3)] border-[hsl(0,70%,50%/0.6)] text-[hsl(0,85%,65%)] hover:bg-[hsl(0,70%,40%/0.5)] hover:shadow-[0_0_12px_hsl(0,80%,55%/0.4)] disabled:cursor-not-allowed disabled:hover:shadow-none disabled:opacity-40"
         >
           ■ Parar Tudo
         </button>
