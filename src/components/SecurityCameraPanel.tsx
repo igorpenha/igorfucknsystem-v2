@@ -2,17 +2,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
 
-const CAMERAS = [
-  { label: "Câmera 1", url: "http://192.168.0.57:3000/cam1.m3u8" },
-  { label: "Câmera 2", url: "http://192.168.0.57:3000/cam2.m3u8" },
-  { label: "Câmera 3", url: "http://192.168.0.57:3000/cam3.m3u8" },
-  { label: "Câmera 4", url: "http://192.168.0.57:3000/cam4.m3u8" },
-  { label: "Câmera 5", url: "http://192.168.0.57:3000/cam5.m3u8" },
-  { label: "Câmera 6", url: "http://192.168.0.57:3000/cam6.m3u8" },
-  { label: "Câmera 7", url: "http://192.168.0.57:3000/cam7.m3u8" },
-  { label: "Câmera 8", url: "http://192.168.0.57:3000/cam8.m3u8" },
-  { label: "Câmera 9", url: "http://192.168.0.57:3000/cam9.m3u8" },
-];
+const CAMERAS = Array.from({ length: 24 }, (_, i) => ({
+  label: `Câmera ${i + 1}`,
+  url: `http://192.168.0.57:3000/cam${i + 1}.m3u8`,
+}));
 
 const ROTATION_INTERVAL = 60000;
 
@@ -162,33 +155,37 @@ const SecurityCameraPanel = () => {
 
       <div className="flex flex-col lg:flex-row gap-4 flex-1">
         {/* LEFT: Control Panel */}
-        <div className="lg:w-[35%] flex flex-col gap-1.5 overflow-y-auto max-h-[400px]">
-          {CAMERAS.map((cam, i) => (
-            <button
-              key={i}
-              onClick={() => handleCameraClick(i)}
-              className={`w-full py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 ${
-                activeCamera === i
-                  ? "bg-primary/20 border-primary text-primary shadow-[0_0_12px_hsl(190,100%,50%/0.3)] ring-1 ring-primary/50"
-                  : "bg-muted/30 border-border text-muted-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <div
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    activeCamera === i && isStreamActive
-                      ? "bg-green-400 shadow-[0_0_6px_hsl(120,60%,50%/0.6)]"
-                      : activeCamera === i && isStandby
-                      ? "bg-destructive shadow-[0_0_6px_hsl(0,80%,55%/0.6)]"
-                      : activeCamera === i
-                      ? "bg-primary animate-pulse-glow"
-                      : "bg-muted-foreground/30"
+        <div className="lg:w-[35%] flex flex-col min-h-0">
+          <div className="border border-border/50 rounded-sm p-1.5 flex-1 min-h-0 overflow-hidden">
+            <div className="overflow-y-auto h-full max-h-[350px] pr-1 space-y-1 custom-scrollbar">
+              {CAMERAS.map((cam, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleCameraClick(i)}
+                  className={`w-full py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 ${
+                    activeCamera === i
+                      ? "bg-primary/20 border-primary text-primary shadow-[0_0_12px_hsl(190,100%,50%/0.3)] ring-1 ring-primary/50"
+                      : "bg-muted/30 border-border text-muted-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                   }`}
-                />
-                {cam.label}
-              </div>
-            </button>
-          ))}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <div
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        activeCamera === i && isStreamActive
+                          ? "bg-green-400 shadow-[0_0_6px_hsl(120,60%,50%/0.6)]"
+                          : activeCamera === i && isStandby
+                          ? "bg-destructive shadow-[0_0_6px_hsl(0,80%,55%/0.6)]"
+                          : activeCamera === i
+                          ? "bg-primary animate-pulse-glow"
+                          : "bg-muted-foreground/30"
+                      }`}
+                    />
+                    {cam.label}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* RIGHT: Video Display */}
