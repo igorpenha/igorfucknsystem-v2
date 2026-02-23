@@ -221,7 +221,7 @@ const SecurityCameraPanel = () => {
           </div>
 
           {/* Video container */}
-          <div className="relative bg-muted/20 rounded-sm overflow-hidden" style={{ aspectRatio: "16/9" }}>
+          <div className="relative bg-muted/20 rounded-sm overflow-hidden crt-filter" style={{ aspectRatio: "16/9" }}>
             {/* Grid overlay */}
             <div
               className="absolute inset-0 pointer-events-none opacity-10 z-[5]"

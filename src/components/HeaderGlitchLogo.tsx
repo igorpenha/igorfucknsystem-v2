@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import logoImage from "@/assets/logo.png";
+import logoImage from "@/assets/logo-new.png";
 
 const HeaderGlitchLogo = () => {
   const [glitchActive, setGlitchActive] = useState(false);
