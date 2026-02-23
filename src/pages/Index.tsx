@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import LoadingScreen from "@/components/LoadingScreen";
 import HeaderGlitchLogo from "@/components/HeaderGlitchLogo";
-import HudClock, { HudDate } from "@/components/HudClock";
+import HudClock from "@/components/HudClock";
 import HudPanel from "@/components/HudPanel";
 
 import TypingText from "@/components/TypingText";
-import CollapsibleCalculator from "@/components/CollapsibleCalculator";
+import Calculator from "@/components/Calculator";
 import NetworkDeviceMonitor from "@/components/NetworkDeviceMonitor";
 import WebRadio from "@/components/WebRadio";
 import InfoWidgets from "@/components/InfoWidgets";
@@ -97,7 +97,7 @@ const Index = () => {
             <HeaderGlitchLogo />
             <div>
               <h1 className="font-display text-sm md:text-base text-foreground text-glow tracking-[0.2em]">
-                IGOR FUCKN FILES
+                IGOR FUCKN SYSTEM
               </h1>
               <p className="text-[10px] text-muted-foreground tracking-widest">
                 <TypingText text="SISTEMA DE GERENCIAMENTO // v2.0" speed={30} />
@@ -122,31 +122,10 @@ const Index = () => {
               </HudPanel>
             </motion.div>
 
-            <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp}>
-              <div className="hud-panel rounded-sm p-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse-glow" />
-                  <span className="text-[10px] text-muted-foreground tracking-widest">SISTEMA OPERACIONAL</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1 h-1 rounded-full bg-secondary" />
-                    <span className="text-[10px] text-secondary">CPU 23%</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1 h-1 rounded-full bg-accent" />
-                    <span className="text-[10px] text-accent">MEM 41%</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1 h-1 rounded-full bg-primary" />
-                    <span className="text-[10px] text-primary">NET ↑↓</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
             <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp}>
-              <CollapsibleCalculator />
+              <HudPanel title="Calculadora">
+                <Calculator />
+              </HudPanel>
             </motion.div>
 
             <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp}>
@@ -157,7 +136,7 @@ const Index = () => {
           {/* Center Column - File Viewer */}
           <div ref={fileViewerRef} className="lg:col-span-6 flex flex-col gap-4 min-h-0">
             <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="flex flex-col flex-1 min-h-0" style={{ height: fileViewerMaxH, maxHeight: fileViewerMaxH } as undefined}>
-              <HudPanel title={activeFolder ? activeFolder.toUpperCase() : "Selecione uma pasta"} className="flex-1 min-h-0 overflow-hidden flex flex-col">
+              <HudPanel title="Lista de Arquivos" className="flex-1 min-h-0 overflow-hidden flex flex-col">
                 <div className="flex-1 overflow-y-auto min-h-0">
                   {activeFolder ? (
                     <FileViewer
@@ -203,17 +182,12 @@ const Index = () => {
               </HudPanel>
             </motion.div>
 
-            <motion.div custom={4} initial="hidden" animate="visible" variants={fadeUp}>
-              <div className="hud-panel rounded-sm p-3 flex justify-center">
-                <HudDate />
-              </div>
-            </motion.div>
           </div>
         </main>
 
         {/* Footer */}
         <footer className="border-t border-border px-4 md:px-8 py-3 flex items-center justify-between relative z-10">
-          <span className="text-[10px] text-muted-foreground tracking-widest">© 2026 IGOR FUCKN FILES</span>
+          <span className="text-[10px] text-muted-foreground tracking-widest">© 2026 IGOR FUCKN SYSTEM</span>
           <span className="text-[10px] text-muted-foreground tracking-widest">BUILD 2.0.0 // ALL SYSTEMS NOMINAL</span>
         </footer>
       </div>
