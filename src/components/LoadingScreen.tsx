@@ -4,20 +4,23 @@ import logoImage from "@/assets/logo-new.png";
 
 const LOADING_DURATION = 6000;
 
-// Holographic ring SVG component
-const HoloRing = ({ radius, delay, color }: { radius: number; delay: number; color: string }) => (
+// Holographic ring - centered on the circular part of the logo (upper ~45% of image)
+const HoloRing = ({ radius, delay, color, reverse }: { radius: number; delay: number; color: string; reverse?: boolean }) => (
   <motion.circle
-    cx="50%"
-    cy="50%"
+    cx="250"
+    cy="195"
     r={radius}
     fill="none"
     stroke={color}
-    strokeWidth="0.5"
-    strokeDasharray="8 4 2 4"
-    initial={{ opacity: 0, rotate: 0 }}
-    animate={{ opacity: [0, 0.6, 0.3, 0.6], rotate: 360 }}
-    transition={{ opacity: { duration: 2, repeat: Infinity, delay }, rotate: { duration: 8 + delay * 3, repeat: Infinity, ease: "linear" } }}
-    style={{ transformOrigin: "center" }}
+    strokeWidth="0.6"
+    strokeDasharray="6 3 1 3"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: [0, 0.5, 0.25, 0.5] }}
+    transition={{ opacity: { duration: 2.5, repeat: Infinity, delay } }}
+    style={{
+      transformOrigin: "250px 195px",
+      animation: `spin ${8 + delay * 4}s linear infinite ${reverse ? "reverse" : "normal"}`,
+    }}
   />
 );
 
@@ -186,7 +189,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     }
   }, [phase]);
 
-  // Shatter particles
+  // Exit effect: energy wave + dissolve
   useEffect(() => {
     if (phase !== "shatter") return;
     const canvas = canvasRef.current;
@@ -196,62 +199,90 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    interface Shard {
-      x: number; y: number; vx: number; vy: number;
-      w: number; h: number; rot: number; vr: number;
-      alpha: number; hue: number; type: "rect" | "circle";
-    }
-    const shards: Shard[] = [];
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
+    let waveRadius = 0;
+    const maxRadius = Math.hypot(cx, cy) * 1.2;
+    const startTime = Date.now();
 
-    for (let i = 0; i < 200; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 3 + Math.random() * 12;
-      const hue = [190, 320, 50, 270][Math.floor(Math.random() * 4)];
-      shards.push({
-        x: cx + (Math.random() - 0.5) * 160,
-        y: cy + (Math.random() - 0.5) * 160,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed + (Math.random() - 0.5) * 3,
-        w: 2 + Math.random() * 8,
-        h: 2 + Math.random() * 6,
-        rot: Math.random() * Math.PI * 2,
-        vr: (Math.random() - 0.5) * 0.3,
-        alpha: 1,
-        hue,
-        type: Math.random() > 0.4 ? "rect" : "circle",
+    // Energy ring particles that ride the wave
+    interface WaveParticle {
+      angle: number;
+      offset: number;
+      size: number;
+      hue: number;
+      trail: number;
+    }
+    const waveParticles: WaveParticle[] = [];
+    for (let i = 0; i < 80; i++) {
+      waveParticles.push({
+        angle: Math.random() * Math.PI * 2,
+        offset: (Math.random() - 0.5) * 30,
+        size: 1 + Math.random() * 2.5,
+        hue: [190, 320, 50][Math.floor(Math.random() * 3)],
+        trail: 0.3 + Math.random() * 0.7,
       });
     }
 
     const draw = () => {
+      const elapsed = (Date.now() - startTime) / 1000;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      let alive = false;
-      for (const s of shards) {
-        s.x += s.vx;
-        s.y += s.vy;
-        s.vy += 0.15;
-        s.rot += s.vr;
-        s.alpha -= 0.012;
-        if (s.alpha <= 0) continue;
-        alive = true;
-        ctx.save();
-        ctx.translate(s.x, s.y);
-        ctx.rotate(s.rot);
-        ctx.globalAlpha = s.alpha;
-        ctx.fillStyle = `hsl(${s.hue}, 100%, 60%)`;
-        ctx.shadowColor = `hsl(${s.hue}, 100%, 60%)`;
-        ctx.shadowBlur = 8;
-        if (s.type === "rect") {
-          ctx.fillRect(-s.w / 2, -s.h / 2, s.w, s.h);
-        } else {
-          ctx.beginPath();
-          ctx.arc(0, 0, s.w / 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
+
+      // Expanding energy wave
+      waveRadius = elapsed * 800;
+      if (waveRadius > maxRadius) return;
+
+      const waveAlpha = Math.max(0, 1 - waveRadius / maxRadius);
+
+      // Outer glow ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, waveRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(190, 100%, 60%, ${waveAlpha * 0.6})`;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = "hsl(190, 100%, 60%)";
+      ctx.shadowBlur = 20;
+      ctx.stroke();
+
+      // Inner magenta ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, waveRadius * 0.95, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(320, 100%, 55%, ${waveAlpha * 0.4})`;
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = "hsl(320, 100%, 55%)";
+      ctx.shadowBlur = 15;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Particles riding the wave
+      for (const p of waveParticles) {
+        const r = waveRadius + p.offset;
+        if (r < 0) continue;
+        const x = cx + Math.cos(p.angle) * r;
+        const y = cy + Math.sin(p.angle) * r;
+        const alpha = waveAlpha * p.trail;
+        if (alpha <= 0) continue;
+
+        ctx.beginPath();
+        ctx.arc(x, y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue}, 100%, 65%, ${alpha})`;
+        ctx.shadowColor = `hsl(${p.hue}, 100%, 60%)`;
+        ctx.shadowBlur = 6;
+        ctx.fill();
       }
-      if (alive) requestAnimationFrame(draw);
+      ctx.shadowBlur = 0;
+
+      // Center dissolve - fading bright core
+      if (elapsed < 0.4) {
+        const coreAlpha = Math.max(0, 1 - elapsed / 0.4);
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 120);
+        grad.addColorStop(0, `hsla(190, 100%, 80%, ${coreAlpha * 0.8})`);
+        grad.addColorStop(0.3, `hsla(320, 100%, 60%, ${coreAlpha * 0.4})`);
+        grad.addColorStop(1, "transparent");
+        ctx.fillStyle = grad;
+        ctx.fillRect(cx - 120, cy - 120, 240, 240);
+      }
+
+      requestAnimationFrame(draw);
     };
     requestAnimationFrame(draw);
   }, [phase]);
@@ -273,14 +304,14 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
           {/* Shatter canvas */}
           <canvas ref={canvasRef} className="absolute inset-0 z-40 pointer-events-none" />
 
-          {/* Shatter flash */}
+          {/* Shatter flash - subtle */}
           {isShatter && (
             <motion.div
               className="absolute inset-0 z-30"
               style={{ background: "white" }}
               initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 1, 0.5, 0.8, 0] }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
+              animate={{ opacity: [0, 0.7, 0, 0.3, 0] }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
             />
           )}
 
@@ -304,11 +335,14 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
             }
           />
 
-          {/* Holographic rings SVG */}
-          <svg className="absolute z-[1] w-[500px] h-[500px] pointer-events-none" viewBox="0 0 500 500">
-            <HoloRing radius={180} delay={0} color="hsl(190, 100%, 50%)" />
-            <HoloRing radius={200} delay={0.5} color="hsl(320, 100%, 50%)" />
-            <HoloRing radius={220} delay={1} color="hsl(50, 100%, 50%)" />
+          {/* Holographic rings SVG - centered on circular part of logo */}
+          <svg className="absolute z-[1] w-[260px] h-[260px] md:w-[380px] md:h-[380px] pointer-events-none" viewBox="0 0 500 500"
+            style={{ marginTop: "-20px" }}
+          >
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+            <HoloRing radius={115} delay={0} color="hsl(190, 100%, 50%)" />
+            <HoloRing radius={125} delay={0.4} color="hsl(320, 100%, 50%)" reverse />
+            <HoloRing radius={135} delay={0.8} color="hsl(50, 100%, 50%)" />
           </svg>
 
           {/* Logo container */}
