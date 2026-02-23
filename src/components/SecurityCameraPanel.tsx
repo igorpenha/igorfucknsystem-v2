@@ -9,6 +9,9 @@ const CAMERAS = [
   { label: "Câmera 4", url: "http://192.168.0.57:3000/cam4.m3u8" },
   { label: "Câmera 5", url: "http://192.168.0.57:3000/cam5.m3u8" },
   { label: "Câmera 6", url: "http://192.168.0.57:3000/cam6.m3u8" },
+  { label: "Câmera 7", url: "http://192.168.0.57:3000/cam7.m3u8" },
+  { label: "Câmera 8", url: "http://192.168.0.57:3000/cam8.m3u8" },
+  { label: "Câmera 9", url: "http://192.168.0.57:3000/cam9.m3u8" },
 ];
 
 const ROTATION_INTERVAL = 60000;
@@ -159,8 +162,7 @@ const SecurityCameraPanel = () => {
 
       <div className="flex flex-col lg:flex-row gap-4 flex-1">
         {/* LEFT: Control Panel */}
-        <div className="lg:w-[35%] flex flex-col gap-3">
-          {/* Camera buttons */}
+        <div className="lg:w-[35%] flex flex-col gap-1.5 overflow-y-auto max-h-[400px]">
           {CAMERAS.map((cam, i) => (
             <button
               key={i}
@@ -187,30 +189,6 @@ const SecurityCameraPanel = () => {
               </div>
             </button>
           ))}
-
-          {/* Divider */}
-          <div className="border-t border-border my-1" />
-
-          {/* Stop All */}
-          <button
-            onClick={handleStopAll}
-            disabled={activeCamera === null && !isAutoRotating}
-            className="w-full py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 bg-destructive/10 border-destructive/40 text-destructive hover:bg-destructive/20 hover:shadow-[0_0_12px_hsl(0,80%,55%/0.3)] disabled:cursor-not-allowed disabled:hover:shadow-none disabled:opacity-30"
-          >
-            ■ Parar Tudo
-          </button>
-
-          {/* Auto Rotation */}
-          <button
-            onClick={handleAutoRotation}
-            className={`w-full py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 ${
-              isAutoRotating
-                ? "bg-accent/20 border-accent text-accent shadow-[0_0_12px_hsl(300,80%,55%/0.3)] animate-pulse-glow"
-                : "bg-primary/10 border-primary/40 text-primary hover:bg-primary/20 hover:shadow-[0_0_12px_hsl(190,100%,50%/0.3)]"
-            }`}
-          >
-            {isAutoRotating ? "⟳ Rotação Auto LIGADA" : "⟳ Rotação Auto"}
-          </button>
         </div>
 
         {/* RIGHT: Video Display */}
@@ -344,6 +322,27 @@ const SecurityCameraPanel = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Bottom controls */}
+      <div className="flex gap-3 mt-3 pt-3 border-t border-border">
+        <button
+          onClick={handleStopAll}
+          disabled={activeCamera === null && !isAutoRotating}
+          className="flex-1 py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 bg-destructive/10 border-destructive/40 text-destructive hover:bg-destructive/20 hover:shadow-[0_0_12px_hsl(0,80%,55%/0.3)] disabled:cursor-not-allowed disabled:hover:shadow-none disabled:opacity-30"
+        >
+          ■ Parar Tudo
+        </button>
+        <button
+          onClick={handleAutoRotation}
+          className={`flex-1 py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 ${
+            isAutoRotating
+              ? "bg-accent/20 border-accent text-accent shadow-[0_0_12px_hsl(300,80%,55%/0.3)] animate-pulse-glow"
+              : "bg-primary/10 border-primary/40 text-primary hover:bg-primary/20 hover:shadow-[0_0_12px_hsl(190,100%,50%/0.3)]"
+          }`}
+        >
+          {isAutoRotating ? "⟳ Rotação Auto LIGADA" : "⟳ Rotação Auto"}
+        </button>
       </div>
     </div>
   );
