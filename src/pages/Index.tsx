@@ -97,7 +97,7 @@ const Index = () => {
             <HeaderGlitchLogo />
             <div>
               <h1 className="font-display text-sm md:text-base text-foreground text-glow tracking-[0.2em]">
-                IGOR FUCKN SYSTEM
+                IGOR FUNK SYSTEM
               </h1>
               <p className="text-[10px] text-muted-foreground tracking-widest">
                 <TypingText text="SISTEMA DE GERENCIAMENTO // v2.0" speed={30} />
@@ -187,7 +187,7 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="border-t border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">
-          <span className="text-[10px] text-muted-foreground tracking-widest">© 2026 IGOR FUCKN SYSTEM</span>
+          <span className="text-[10px] text-muted-foreground tracking-widest">© 2026 IGOR FUNK SYSTEM</span>
           <span className="text-[10px] text-muted-foreground tracking-widest">BUILD 2.0.0 // ALL SYSTEMS NOMINAL</span>
         </footer>
       </div>

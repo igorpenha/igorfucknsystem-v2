@@ -29,7 +29,7 @@ const HeaderGlitchLogo = () => {
     <div className="relative w-10 h-10 md:w-12 md:h-12 overflow-hidden rounded-sm">
       <motion.img
         src={logoImage}
-        alt="Igor Fuckn Files"
+        alt="Igor Funk System"
         className="absolute inset-0 w-full h-full object-contain"
         animate={{ x: ox }}
         transition={{ duration: 0.02 }}
