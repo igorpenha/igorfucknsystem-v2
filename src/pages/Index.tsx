@@ -33,8 +33,11 @@ const Index = () => {
   const [totalSize, setTotalSize] = useState(0);
   const [rescanning, setRescanning] = useState(false);
   const [fileViewerMaxH, setFileViewerMaxH] = useState<number | undefined>(undefined);
+  const [cameraMaxH, setCameraMaxH] = useState<number | undefined>(undefined);
   const webRadioRef = useRef<HTMLDivElement>(null);
   const fileViewerRef = useRef<HTMLDivElement>(null);
+  const leftColRef = useRef<HTMLDivElement>(null);
+  const cameraPanelRef = useRef<HTMLDivElement>(null);
 
   const loadFiles = useCallback(async (folderName: string) => {
     try {
@@ -79,11 +82,19 @@ const Index = () => {
         const maxH = radioBottom - viewerTop - 1;
         if (maxH > 200) setFileViewerMaxH(maxH);
       }
+      // Align camera panel bottom with left column bottom
+      if (leftColRef.current && cameraPanelRef.current) {
+        const leftBottom = leftColRef.current.getBoundingClientRect().bottom;
+        const camTop = cameraPanelRef.current.getBoundingClientRect().top;
+        const camH = leftBottom - camTop;
+        if (camH > 150) setCameraMaxH(camH);
+      }
     };
     sync();
     window.addEventListener("resize", sync);
     const timer = setTimeout(sync, 500);
-    return () => { window.removeEventListener("resize", sync); clearTimeout(timer); };
+    const timer2 = setTimeout(sync, 1000);
+    return () => { window.removeEventListener("resize", sync); clearTimeout(timer); clearTimeout(timer2); };
   }, []);
 
   return (
@@ -110,7 +121,7 @@ const Index = () => {
         {/* Main Content */}
         <main className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-3 relative z-10 flex-1 min-h-0 overflow-hidden">
           {/* Left Column - File Menu */}
-          <div className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
+          <div ref={leftColRef} className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
             <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp}>
               <HudPanel title="Arquivos">
                 <FileMenu
@@ -163,7 +174,7 @@ const Index = () => {
             </motion.div>
 
             {/* Security Camera Panel - stretches to fill remaining space */}
-            <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1">
+            <motion.div ref={cameraPanelRef} custom={3} initial="hidden" animate="visible" variants={fadeUp} style={cameraMaxH ? { height: cameraMaxH } : undefined}>
               <SecurityCameraPanel />
             </motion.div>
           </div>
