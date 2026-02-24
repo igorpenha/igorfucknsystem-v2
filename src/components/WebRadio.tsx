@@ -157,29 +157,33 @@ const WebRadio = () => {
 
   const startAnalyser = useCallback(() => {
     if (!audioRef.current) return;
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
-    const ctx = audioContextRef.current;
-    if (!sourceRef.current) {
-      sourceRef.current = ctx.createMediaElementSource(audioRef.current);
-    }
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 512;
-    analyser.smoothingTimeConstant = 0.4;
-    sourceRef.current.connect(analyser);
-    analyser.connect(ctx.destination);
-    analyserRef.current = analyser;
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+      const ctx = audioContextRef.current;
+      if (!sourceRef.current) {
+        sourceRef.current = ctx.createMediaElementSource(audioRef.current);
+      }
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.4;
+      sourceRef.current.connect(analyser);
+      analyser.connect(ctx.destination);
+      analyserRef.current = analyser;
 
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    const tick = () => {
-      analyser.getByteFrequencyData(dataArray);
-      let sum = 0;
-      for (let i = 0; i < 20; i++) sum += dataArray[i];
-      setEnergy(sum / (20 * 255));
-      animFrameRef.current = requestAnimationFrame(tick);
-    };
-    tick();
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < 20; i++) sum += dataArray[i];
+        setEnergy(sum / (20 * 255));
+        animFrameRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (e) {
+      console.warn("AudioContext analyser failed (CORS), skipping visualizer:", e);
+    }
   }, []);
 
   const stopAnalyser = useCallback(() => {
@@ -199,16 +203,19 @@ const WebRadio = () => {
       setPlaying(false);
     } else {
       const audio = new Audio();
-      audio.crossOrigin = "anonymous";
       audio.volume = muted ? 0 : 1;
       audioRef.current = audio;
 
-      // Direct MP3 stream playback
+      // Direct MP3 stream playback — no crossOrigin to avoid CORS block
       audio.src = STREAM_URL;
       audio.load();
       audio.play().then(() => {
         setPlaying(true);
-        startAnalyser();
+        // Try analyser separately — may fail due to CORS taint
+        try {
+          audio.crossOrigin = "anonymous";
+          startAnalyser();
+        } catch {}
       }).catch((err) => {
         console.error("Play failed:", err);
         setMetadata(prev => ({ ...prev, title: "Erro ao reproduzir", artist: "Verifique a conexão" }));
