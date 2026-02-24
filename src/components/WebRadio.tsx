@@ -11,10 +11,12 @@ const WebRadio = () => {
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const ctxRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
   const frameRef = useRef(0);
   const barsRef = useRef<HTMLDivElement[]>([]);
 
-  // Metadata placeholders
   const [track, setTrack] = useState({
     title: "Aguardando sinal...",
     artist: "---",
@@ -22,36 +24,55 @@ const WebRadio = () => {
     cover: "",
   });
 
-  // Simulated visualizer using direct DOM manipulation (no re-renders)
-  const startVisualizer = useCallback(() => {
-    const tick = () => {
-      for (let i = 0; i < BAR_COUNT; i++) {
-        const bar = barsRef.current[i];
-        if (!bar) continue;
-        const freq = i / BAR_COUNT;
-        const base = (1 - freq * 0.55) * volume;
-        const rand = Math.random() * 0.45 + 0.55;
-        const wave = Math.sin(Date.now() / (280 + i * 35)) * 0.35;
-        const val = base * rand * (0.65 + wave);
-        const h = Math.max(val * 100, 1.5);
-        const hue = 185 + (i / BAR_COUNT) * 135;
-        bar.style.height = `${h}%`;
-        bar.style.background = `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.08), hsla(${hue}, 100%, 55%, ${0.35 + val * 0.65}))`;
-        bar.style.boxShadow = val > 0.35
-          ? `0 0 ${val * 10}px hsla(${hue}, 100%, 50%, ${val * 0.4})`
-          : "none";
+  // Real Web Audio API analyser
+  const startAnalyser = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    try {
+      if (!ctxRef.current) {
+        ctxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
+      const ctx = ctxRef.current;
+      if (!sourceRef.current) {
+        sourceRef.current = ctx.createMediaElementSource(audio);
+      }
+      if (!analyserRef.current) {
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 64;
+        analyser.smoothingTimeConstant = 0.5;
+        sourceRef.current.connect(analyser);
+        analyser.connect(ctx.destination);
+        analyserRef.current = analyser;
+      }
+      if (ctx.state === "suspended") ctx.resume();
+
+      const analyser = analyserRef.current;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      const tick = () => {
+        analyser.getByteFrequencyData(dataArray);
+        for (let i = 0; i < BAR_COUNT; i++) {
+          const bar = barsRef.current[i];
+          if (!bar) continue;
+          const val = dataArray[i] / 255;
+          const h = Math.max(val * 100, 1.5);
+          const hue = 185 + (i / BAR_COUNT) * 135;
+          bar.style.height = `${h}%`;
+          bar.style.background = `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.08), hsla(${hue}, 100%, 55%, ${0.35 + val * 0.65}))`;
+          bar.style.boxShadow = val > 0.35
+            ? `0 0 ${val * 10}px hsla(${hue}, 100%, 50%, ${val * 0.4})`
+            : "none";
+        }
+        frameRef.current = requestAnimationFrame(tick);
+      };
       frameRef.current = requestAnimationFrame(tick);
-    };
-    frameRef.current = requestAnimationFrame(tick);
-  }, [volume]);
+    } catch (e) {
+      console.warn("AudioContext init failed:", e);
+    }
+  }, []);
 
-  // Fallback simulated visualizer (when CORS blocks frequency data)
-  
-
-  const stopVisualizer = useCallback(() => {
+  const stopAnalyser = useCallback(() => {
     cancelAnimationFrame(frameRef.current);
-    // Smooth decay to zero
     let decaying = true;
     const decay = () => {
       let allDone = true;
@@ -72,18 +93,17 @@ const WebRadio = () => {
     return () => { decaying = false; };
   }, []);
 
-  // Audio events
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     const onPlaying = () => {
       setConnecting(false);
       setPlaying(true);
-      startVisualizer();
+      startAnalyser();
       setTrack(t => ({ ...t, title: t.title === "Aguardando sinal..." || t.title === "Conectando..." ? "LIVE BROADCAST" : t.title }));
     };
-    const onPause = () => { setPlaying(false); setConnecting(false); stopVisualizer(); };
-    const onError = () => { setConnecting(false); setPlaying(false); stopVisualizer(); };
+    const onPause = () => { setPlaying(false); setConnecting(false); stopAnalyser(); };
+    const onError = () => { setConnecting(false); setPlaying(false); stopAnalyser(); };
     audio.addEventListener("playing", onPlaying);
     audio.addEventListener("pause", onPause);
     audio.addEventListener("error", onError);
@@ -92,7 +112,7 @@ const WebRadio = () => {
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("error", onError);
     };
-  }, [startVisualizer, stopVisualizer]);
+  }, [startAnalyser, stopAnalyser]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -101,6 +121,7 @@ const WebRadio = () => {
     setConnecting(true);
     setTrack(t => ({ ...t, title: "Conectando..." }));
     audio.src = `${STREAM_URL}?t=${Date.now()}`;
+    audio.crossOrigin = "anonymous";
     audio.volume = muted ? 0 : volume;
     audio.muted = muted;
     audio.load();
@@ -126,7 +147,7 @@ const WebRadio = () => {
 
   return (
     <div className="flex flex-col h-full font-mono select-none overflow-hidden relative">
-      <audio ref={audioRef} playsInline />
+      <audio ref={audioRef} playsInline crossOrigin="anonymous" />
 
       {/* ── Top decorative ── */}
       <div className="px-2 pt-1.5 pb-1 flex items-center justify-between text-[6px] tracking-[0.3em] uppercase text-muted-foreground/30">
@@ -213,7 +234,7 @@ const WebRadio = () => {
         </div>
       </div>
 
-      {/* ── Spectrum Visualizer (DOM refs — no React re-renders) ── */}
+      {/* ── Real Spectrum Visualizer (Web Audio API — 32 bars from AnalyserNode) ── */}
       <div className="px-2 flex-1 min-h-0 flex items-end justify-center gap-[1.5px] pb-1">
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
           const hue = 185 + (i / BAR_COUNT) * 135;
@@ -221,7 +242,7 @@ const WebRadio = () => {
             <div
               key={i}
               ref={el => { if (el) barsRef.current[i] = el; }}
-              className="flex-1 min-w-0 transition-none"
+              className="flex-1 min-w-0"
               style={{
                 height: "1.5%",
                 background: `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.04), hsla(${hue}, 100%, 55%, 0.1))`,
