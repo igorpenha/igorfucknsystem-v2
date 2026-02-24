@@ -122,6 +122,7 @@ async function fetchStreamMetadata(): Promise<{ title: string; artist: string } 
 
 const WebRadio = () => {
   const [playing, setPlaying] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [muted, setMuted] = useState(false);
   const [metadata, setMetadata] = useState({ title: "Aguardando sinal...", artist: "", albumArt: "" });
   const [history, setHistory] = useState<TrackInfo[]>([]);
@@ -195,43 +196,82 @@ const WebRadio = () => {
     setEnergy(0);
   }, []);
 
-  const togglePlay = useCallback(() => {
-    if (playing) {
-      audioRef.current?.pause();
-      audioRef.current = null;
-      stopAnalyser();
-      setPlaying(false);
-    } else {
-      const audio = new Audio();
-      audio.volume = muted ? 0 : 1;
-      audioRef.current = audio;
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
 
-      // Direct MP3 stream playback — no crossOrigin to avoid CORS block
-      audio.src = STREAM_URL;
-      audio.load();
-      audio.play().then(() => {
-        setPlaying(true);
-        // Try analyser separately — may fail due to CORS taint
-        try {
-          audio.crossOrigin = "anonymous";
-          startAnalyser();
-        } catch {}
-      }).catch((err) => {
-        console.error("Play failed:", err);
-        setMetadata(prev => ({ ...prev, title: "Erro ao reproduzir", artist: "Verifique a conexão" }));
-      });
+    const onPlaying = () => {
+      setConnecting(false);
+      setPlaying(true);
+      fetchMetadata();
+      startAnalyser();
+    };
+    const onPause = () => {
+      setPlaying(false);
+      setConnecting(false);
+      stopAnalyser();
+    };
+    const onError = () => {
+      setConnecting(false);
+      setPlaying(false);
+      setMetadata((prev) => ({ ...prev, title: "Erro ao reproduzir", artist: "Verifique a conexão" }));
+      stopAnalyser();
+    };
+
+    audio.addEventListener("playing", onPlaying);
+    audio.addEventListener("pause", onPause);
+    audio.addEventListener("error", onError);
+    audio.addEventListener("stalled", onError);
+
+    return () => {
+      audio.removeEventListener("playing", onPlaying);
+      audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("error", onError);
+      audio.removeEventListener("stalled", onError);
+    };
+  }, [fetchMetadata, startAnalyser, stopAnalyser]);
+
+  const togglePlay = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (playing || connecting) {
+      audio.pause();
+      return;
     }
-  }, [playing, muted, startAnalyser, stopAnalyser]);
+
+    setConnecting(true);
+    setMetadata((prev) => ({ ...prev, title: "Conectando...", artist: "" }));
+
+    // Cache-bust helps some Icecast proxies/browsers
+    audio.src = `${STREAM_URL}?t=${Date.now()}`;
+    audio.preload = "none";
+    audio.volume = muted ? 0 : 1;
+    audio.muted = muted;
+
+    audio.load();
+    audio.play().catch((err) => {
+      console.error("Play failed:", err);
+      setConnecting(false);
+      setMetadata((prev) => ({ ...prev, title: "Erro ao reproduzir", artist: "Toque no play novamente" }));
+    });
+  }, [playing, connecting, muted]);
 
   const toggleMute = useCallback(() => {
     setMuted((m) => {
-      if (audioRef.current) audioRef.current.volume = m ? 1 : 0;
-      return !m;
+      const nextMuted = !m;
+      if (audioRef.current) {
+        audioRef.current.muted = nextMuted;
+        audioRef.current.volume = nextMuted ? 0 : 1;
+      }
+      return nextMuted;
     });
   }, []);
 
   return (
     <div className="flex flex-col bg-card/90 backdrop-blur-md border border-border rounded-sm overflow-hidden font-mono relative max-w-full">
+      <audio ref={audioRef} playsInline />
+
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/30">
         <button onClick={toggleMute} className="text-muted-foreground hover:text-primary transition-colors">
@@ -240,10 +280,16 @@ const WebRadio = () => {
         <span className="text-[10px] font-display tracking-[0.2em] text-primary">
           IGOR·FUCKN·STATION
         </span>
-        <span className={`text-[9px] tracking-wider ${playing ? "text-neon-green" : "text-muted-foreground"}`}>
-          {playing ? "NO AR" : "OFFLINE"}
+        <span className={`text-[9px] tracking-wider ${playing ? "text-neon-green" : connecting ? "text-accent" : "text-muted-foreground"}`}>
+          {playing ? "NO AR" : connecting ? "CONECTANDO" : "OFFLINE"}
         </span>
       </div>
+
+      {connecting && (
+        <div className="px-3 py-1 text-[10px] tracking-widest text-accent border-b border-border/50 bg-muted/20">
+          ESTABELECENDO CONEXÃO COM O STREAM...
+        </div>
+      )}
 
       {/* Corner accents */}
       <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary/40" />
@@ -281,8 +327,15 @@ const WebRadio = () => {
       </div>
 
       {/* Play button */}
-      <div className="flex items-center justify-center py-1 pb-3">
+      <div className="flex flex-col items-center justify-center py-1 pb-3 gap-2">
         <CyberPlayButton playing={playing} onClick={togglePlay} energy={energy} />
+        <button
+          type="button"
+          onClick={togglePlay}
+          className="px-3 py-1 text-[10px] tracking-widest border border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 rounded-sm"
+        >
+          {playing || connecting ? "PAUSAR STREAM" : "PLAY STREAM"}
+        </button>
       </div>
 
       {/* Track History */}

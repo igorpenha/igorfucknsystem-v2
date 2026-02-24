@@ -55,7 +55,13 @@ const CyberPlayButton = ({ playing, onClick, energy }: CyberPlayButtonProps) => 
   const pulseScale = pulse ? 1.08 : 1;
 
   return (
-    <div className="relative cursor-pointer flex items-center justify-center" onClick={onClick}>
+    <button
+      type="button"
+      className="relative cursor-pointer flex items-center justify-center"
+      onPointerDown={onClick}
+      onClick={onClick}
+      aria-label={playing ? "Pausar rádio" : "Tocar rádio"}
+    >
       <svg width="100" height="100" viewBox="0 0 100 100" className="overflow-visible">
         <defs>
           <filter id="glow-btn">
@@ -158,7 +164,7 @@ const CyberPlayButton = ({ playing, onClick, energy }: CyberPlayButtonProps) => 
           </div>
         </foreignObject>
       </svg>
-    </div>
+    </button>
   );
 };
 
