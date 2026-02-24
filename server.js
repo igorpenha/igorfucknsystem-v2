@@ -132,38 +132,37 @@ app.get("/api/download", async (req, res) => {
 });
 
 // ── GET /api/radio/now-playing ────────────────────────────
-// Retorna metadados da música atual do stream Icecast.
-// TODO: Conectar ao Icecast status-json.xsl para dados reais.
+
+const RADIO_DATA_DIR = "D:\\IGORFUCKNSYSTEM\\RADIODATA";
 
 app.get("/api/radio/now-playing", async (_req, res) => {
   try {
-    // Exemplo: buscar do Icecast (descomente e ajuste a URL quando pronto)
-    // const icecastRes = await fetch("http://localhost:8000/status-json.xsl");
-    // const icecastData = await icecastRes.json();
-    // const source = icecastData.icestats?.source;
-    // const title = source?.title || "LIVE BROADCAST";
-    // const artist = source?.artist || "---";
-    // res.json({ title, artist, album: "---", coverUrl: "" });
-
-    // RadioBOSS envia metadados no formato "%artist - %title" via stream header.
-    // Para ler em tempo real, faça fetch dos headers do stream ou use a API do RadioBOSS.
-    // Exemplo com fetch do stream (descomente quando pronto):
-    // const streamRes = await fetch("https://stream.igorfucknsystem.com.br/live", { method: "HEAD" });
-    // const icyTitle = streamRes.headers.get("icy-metadata") || "";
-    // const [artist, title] = icyTitle.includes(" - ") ? icyTitle.split(" - ", 2) : ["---", icyTitle || "LIVE BROADCAST"];
-    // res.json({ title, artist, album: "---", coverUrl: "" });
-
-    // Placeholder até conectar ao RadioBOSS:
+    const filePath = path.join(RADIO_DATA_DIR, "nowplaying.txt");
+    const text = await fs.readFile(filePath, "utf8");
     res.json({
-      title: "LIVE BROADCAST",
-      artist: "IGOR FUCKN SYSTEM",
-      album: "STREAMING",
-      coverUrl: "",
+      title: text.trim() || "Nenhuma música tocando",
+      artist: "",
+      album: "TRANSMISSÃO AO VIVO",
+      coverUrl: "http://localhost:4000/api/radio/artwork",
     });
-  } catch (err) {
-    console.error("GET /api/radio/now-playing error:", err);
-    res.status(500).json({ error: "Failed to fetch now-playing metadata" });
+  } catch {
+    res.json({
+      title: "Nenhuma música tocando",
+      artist: "",
+      album: "TRANSMISSÃO AO VIVO",
+      coverUrl: "http://localhost:4000/api/radio/artwork",
+    });
   }
+});
+
+// ── GET /api/radio/artwork ───────────────────────────────
+
+app.get("/api/radio/artwork", (_req, res) => {
+  const artPath = path.join(RADIO_DATA_DIR, "artwork.png");
+  if (!fsSync.existsSync(artPath)) {
+    return res.status(404).json({ error: "Artwork not found" });
+  }
+  res.sendFile(artPath);
 });
 
 // ── Start ────────────────────────────────────────────────
