@@ -134,15 +134,15 @@ const WebRadio = () => {
             if (prev.cover !== newCover) setCoverError(false);
             if (lastTrackRef.current && lastTrackRef.current !== trackId) {
               setTransitionKey(k => k + 1);
-              // Add to history
+              // Add PREVIOUS track to history (the one that just finished)
               setTrackHistory(h => {
                 const entry: TrackHistoryEntry = {
-                  title: data.title || "UNKNOWN",
-                  artist: data.artist || "UNKNOWN",
-                  albumArt: newCover,
+                  title: prev.title !== "Conectando..." ? prev.title : "UNKNOWN",
+                  artist: prev.artist !== "SCANNING..." ? prev.artist : "UNKNOWN",
+                  albumArt: prev.cover,
                   timestamp: ts,
                 };
-                return [entry, ...h].slice(0, 5);
+                return [entry, ...h].slice(0, 3);
               });
             }
             lastTrackRef.current = trackId;
@@ -281,7 +281,7 @@ const WebRadio = () => {
       className="font-mono select-none overflow-hidden relative flex-1 min-h-0"
       style={{
         display: "grid",
-        gridTemplateRows: "auto 1fr 160px 1fr auto",
+        gridTemplateRows: "auto 1fr auto auto auto",
         height: "100%",
         width: "100%",
       }}
@@ -360,7 +360,7 @@ const WebRadio = () => {
       </div>
 
       {/* ═══ ROW 2: Visualizador de Espectro (flex-grow) ═══ */}
-      <div className="px-2 flex items-end justify-center gap-[1.5px] py-2 min-h-0 relative z-10">
+      <div className="px-0 flex items-end justify-center gap-[1.5px] py-2 min-h-0 relative z-10">
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
           const hue = 185 + (i / BAR_COUNT) * 135;
           return (
@@ -379,8 +379,8 @@ const WebRadio = () => {
         })}
       </div>
 
-      {/* ═══ ROW 3: Carrossel + Metadados (160px) ═══ */}
-      <div className="px-2 flex flex-col items-center justify-center gap-1.5 border-t border-border/15 overflow-hidden relative z-10">
+      {/* ═══ ROW 3: Carrossel + Metadados ═══ */}
+      <div className="px-1 flex flex-col items-center justify-center gap-1.5 border-t border-border/15 overflow-hidden relative z-10 py-3">
         <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
         <CarouselErrorBoundary>
           <CoverFlowCarousel
@@ -397,10 +397,7 @@ const WebRadio = () => {
             <p className="text-[11px] text-foreground font-display tracking-wider truncate leading-tight drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]">
               {track.title}
             </p>
-            <p className="text-[8px] text-muted-foreground/50 truncate leading-tight tracking-widest uppercase">
-              {track.album}
-            </p>
-            <p className="text-[9px] text-accent/70 truncate leading-tight tracking-wider">
+            <p className="text-base text-accent tracking-wider truncate leading-tight font-display drop-shadow-[0_0_8px_hsl(var(--accent)/0.5)]">
               {track.artist}
             </p>
           </div>

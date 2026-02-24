@@ -38,7 +38,7 @@ const TrackHistory = ({ tracks }: TrackHistoryProps) => {
             )}
             <div className="min-w-0 flex-1">
               <p className="text-[10px] text-foreground truncate">{track.title}</p>
-              <p className="text-[8px] text-muted-foreground truncate">{track.artist}</p>
+              <p className="text-[9px] text-accent/80 truncate">{track.artist}</p>
             </div>
             {i === 0 && (
               <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow" />
