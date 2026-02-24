@@ -5,27 +5,19 @@ import { Volume2, VolumeX, Play, Pause } from "lucide-react";
 const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
 const BAR_COUNT = 32;
 
-function generateBars(prev: number[], vol: number): number[] {
-  return prev.map((old, i) => {
-    const freq = i / BAR_COUNT;
-    const base = (1 - freq * 0.55) * vol;
-    const rand = Math.random() * 0.45 + 0.55;
-    const wave = Math.sin(Date.now() / (280 + i * 35)) * 0.35;
-    const target = base * rand * (0.65 + wave);
-    return old * 0.28 + target * 0.72;
-  });
-}
-
 const WebRadio = () => {
   const [playing, setPlaying] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const ctxRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
   const frameRef = useRef(0);
-  const [bars, setBars] = useState<number[]>(new Array(BAR_COUNT).fill(0));
+  const barsRef = useRef<HTMLDivElement[]>([]);
 
-  // Metadata state (placeholder until backend integration)
+  // Metadata placeholders
   const [track, setTrack] = useState({
     title: "Aguardando sinal...",
     artist: "---",
@@ -33,9 +25,79 @@ const WebRadio = () => {
     cover: "",
   });
 
-  const startVisualizer = useCallback(() => {
+  // Setup Web Audio API analyser
+  const startAnalyser = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    try {
+      if (!ctxRef.current) {
+        ctxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = ctxRef.current;
+
+      if (!sourceRef.current) {
+        sourceRef.current = ctx.createMediaElementSource(audio);
+      }
+
+      if (!analyserRef.current) {
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 64;
+        analyser.smoothingTimeConstant = 0.5;
+        sourceRef.current.connect(analyser);
+        analyser.connect(ctx.destination);
+        analyserRef.current = analyser;
+      }
+
+      if (ctx.state === "suspended") ctx.resume();
+
+      const analyser = analyserRef.current;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount); // 32 bins
+
+      const tick = () => {
+        analyser.getByteFrequencyData(dataArray);
+
+        for (let i = 0; i < BAR_COUNT; i++) {
+          const bar = barsRef.current[i];
+          if (!bar) continue;
+          const val = dataArray[i] / 255;
+          const h = Math.max(val * 100, 1.5);
+          const hue = 185 + (i / BAR_COUNT) * 135;
+          bar.style.height = `${h}%`;
+          bar.style.background = `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.08), hsla(${hue}, 100%, 55%, ${0.35 + val * 0.65}))`;
+          bar.style.boxShadow = val > 0.35
+            ? `0 0 ${val * 10}px hsla(${hue}, 100%, 50%, ${val * 0.4})`
+            : "none";
+        }
+
+        frameRef.current = requestAnimationFrame(tick);
+      };
+      frameRef.current = requestAnimationFrame(tick);
+    } catch (e) {
+      console.warn("Web Audio API failed, falling back to simulated visualizer:", e);
+      startFallbackVisualizer();
+    }
+  }, []);
+
+  // Fallback simulated visualizer (when CORS blocks frequency data)
+  const startFallbackVisualizer = useCallback(() => {
     const tick = () => {
-      setBars(prev => generateBars(prev, volume));
+      for (let i = 0; i < BAR_COUNT; i++) {
+        const bar = barsRef.current[i];
+        if (!bar) continue;
+        const freq = i / BAR_COUNT;
+        const base = (1 - freq * 0.55) * volume;
+        const rand = Math.random() * 0.45 + 0.55;
+        const wave = Math.sin(Date.now() / (280 + i * 35)) * 0.35;
+        const val = base * rand * (0.65 + wave);
+        const h = Math.max(val * 100, 1.5);
+        const hue = 185 + (i / BAR_COUNT) * 135;
+        bar.style.height = `${h}%`;
+        bar.style.background = `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.08), hsla(${hue}, 100%, 55%, ${0.35 + val * 0.65}))`;
+        bar.style.boxShadow = val > 0.35
+          ? `0 0 ${val * 10}px hsla(${hue}, 100%, 50%, ${val * 0.4})`
+          : "none";
+      }
       frameRef.current = requestAnimationFrame(tick);
     };
     frameRef.current = requestAnimationFrame(tick);
@@ -43,25 +105,56 @@ const WebRadio = () => {
 
   const stopVisualizer = useCallback(() => {
     cancelAnimationFrame(frameRef.current);
+    // Smooth decay to zero
+    let decaying = true;
     const decay = () => {
-      setBars(prev => {
-        const next = prev.map(v => v * 0.82);
-        if (next.every(v => v < 0.01)) return new Array(BAR_COUNT).fill(0);
-        requestAnimationFrame(decay);
-        return next;
-      });
+      let allDone = true;
+      for (let i = 0; i < BAR_COUNT; i++) {
+        const bar = barsRef.current[i];
+        if (!bar) continue;
+        const current = parseFloat(bar.style.height) || 0;
+        const next = current * 0.82;
+        if (next > 0.5) allDone = false;
+        const hue = 185 + (i / BAR_COUNT) * 135;
+        bar.style.height = `${Math.max(next, 1.5)}%`;
+        bar.style.background = `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.04), hsla(${hue}, 100%, 55%, 0.1))`;
+        bar.style.boxShadow = "none";
+      }
+      if (!allDone && decaying) requestAnimationFrame(decay);
     };
     decay();
+    return () => { decaying = false; };
   }, []);
 
+  // Detect if analyser returns real data or zeros (CORS blocked)
+  const detectCorsAndFallback = useCallback(() => {
+    if (!analyserRef.current) return;
+    const data = new Uint8Array(analyserRef.current.frequencyBinCount);
+    let checks = 0;
+    const check = () => {
+      analyserRef.current?.getByteFrequencyData(data);
+      const sum = data.reduce((a, b) => a + b, 0);
+      checks++;
+      if (sum > 0) return; // Real data — analyser works fine
+      if (checks < 15) { setTimeout(check, 200); return; }
+      // After 3s of zeros, switch to fallback
+      console.warn("CORS blocking frequency data — switching to simulated visualizer");
+      cancelAnimationFrame(frameRef.current);
+      startFallbackVisualizer();
+    };
+    setTimeout(check, 500);
+  }, [startFallbackVisualizer]);
+
+  // Audio events
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     const onPlaying = () => {
       setConnecting(false);
       setPlaying(true);
-      startVisualizer();
-      setTrack(t => ({ ...t, title: t.title === "Aguardando sinal..." ? "LIVE BROADCAST" : t.title }));
+      startAnalyser();
+      detectCorsAndFallback();
+      setTrack(t => ({ ...t, title: t.title === "Aguardando sinal..." || t.title === "Conectando..." ? "LIVE BROADCAST" : t.title }));
     };
     const onPause = () => { setPlaying(false); setConnecting(false); stopVisualizer(); };
     const onError = () => { setConnecting(false); setPlaying(false); stopVisualizer(); };
@@ -73,7 +166,7 @@ const WebRadio = () => {
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("error", onError);
     };
-  }, [startVisualizer, stopVisualizer]);
+  }, [startAnalyser, stopVisualizer, detectCorsAndFallback]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -82,6 +175,7 @@ const WebRadio = () => {
     setConnecting(true);
     setTrack(t => ({ ...t, title: "Conectando..." }));
     audio.src = `${STREAM_URL}?t=${Date.now()}`;
+    audio.crossOrigin = "anonymous";
     audio.volume = muted ? 0 : volume;
     audio.muted = muted;
     audio.load();
@@ -107,9 +201,9 @@ const WebRadio = () => {
 
   return (
     <div className="flex flex-col h-full font-mono select-none overflow-hidden relative">
-      <audio ref={audioRef} playsInline />
+      <audio ref={audioRef} playsInline crossOrigin="anonymous" />
 
-      {/* ── Top decorative bar ── */}
+      {/* ── Top decorative ── */}
       <div className="px-2 pt-1.5 pb-1 flex items-center justify-between text-[6px] tracking-[0.3em] uppercase text-muted-foreground/30">
         <span>SYS.NODE // 8050</span>
         <span className="text-primary/40">STREAM_ENCRYPTED</span>
@@ -164,14 +258,11 @@ const WebRadio = () => {
 
       {/* ── Album Art + Metadata ── */}
       <div className="px-2 pb-1.5 flex items-center gap-2.5">
-        {/* Cover art */}
         <div
           className="w-14 h-14 shrink-0 border overflow-hidden flex items-center justify-center"
           style={{
             borderColor: playing ? "hsl(var(--primary))" : "hsl(var(--border))",
-            boxShadow: playing
-              ? "0 0 12px hsl(var(--primary) / 0.25), inset 0 0 8px hsl(var(--primary) / 0.1)"
-              : "none",
+            boxShadow: playing ? "0 0 12px hsl(var(--primary) / 0.25), inset 0 0 8px hsl(var(--primary) / 0.1)" : "none",
             background: "hsl(var(--muted) / 0.15)",
             clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)",
             transition: "border-color 0.3s, box-shadow 0.3s",
@@ -188,39 +279,30 @@ const WebRadio = () => {
             </div>
           )}
         </div>
-
-        {/* Track info */}
         <div className="flex-1 min-w-0 space-y-0.5">
           <p className="text-[10px] text-foreground font-display tracking-wider truncate leading-tight drop-shadow-[0_0_4px_hsl(var(--primary)/0.3)]">
             {track.title}
           </p>
-          <p className="text-[8px] text-accent/70 truncate leading-tight tracking-wider">
-            {track.artist}
-          </p>
-          <p className="text-[7px] text-muted-foreground/40 truncate leading-tight tracking-widest uppercase">
-            {track.album}
-          </p>
+          <p className="text-[8px] text-accent/70 truncate leading-tight tracking-wider">{track.artist}</p>
+          <p className="text-[7px] text-muted-foreground/40 truncate leading-tight tracking-widest uppercase">{track.album}</p>
         </div>
       </div>
 
-      {/* ── Spectrum Visualizer ── */}
+      {/* ── Spectrum Visualizer (DOM refs — no React re-renders) ── */}
       <div className="px-2 flex-1 min-h-0 flex items-end justify-center gap-[1.5px] pb-1">
-        {bars.map((val, i) => {
+        {Array.from({ length: BAR_COUNT }).map((_, i) => {
           const hue = 185 + (i / BAR_COUNT) * 135;
-          const h = Math.max(val * 100, 1.5);
           return (
-            <motion.div
+            <div
               key={i}
-              className="flex-1 min-w-0"
+              ref={el => { if (el) barsRef.current[i] = el; }}
+              className="flex-1 min-w-0 transition-none"
               style={{
-                background: `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.08), hsla(${hue}, 100%, 55%, ${0.35 + val * 0.65}))`,
-                boxShadow: val > 0.35
-                  ? `0 0 ${val * 10}px hsla(${hue}, 100%, 50%, ${val * 0.4})`
-                  : "none",
+                height: "1.5%",
+                background: `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.04), hsla(${hue}, 100%, 55%, 0.1))`,
                 clipPath: "polygon(1px 0, calc(100% - 1px) 0, 100% 100%, 0 100%)",
+                willChange: "height, background, box-shadow",
               }}
-              animate={{ height: `${h}%` }}
-              transition={{ type: "spring", stiffness: 380, damping: 18, mass: 0.25 }}
             />
           );
         })}
@@ -229,7 +311,7 @@ const WebRadio = () => {
       {/* ── Signal line ── */}
       <div className="mx-2 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
 
-      {/* ── Decorative status ── */}
+      {/* ── Status ── */}
       <div className="px-2 py-0.5 flex justify-between text-[6px] tracking-[0.15em] text-muted-foreground/25 uppercase">
         <span>SIGNAL: {playing ? "OPTIMAL" : "STANDBY"}</span>
         <span>NODE: {playing ? "ACTV" : "IDLE"}</span>
@@ -238,7 +320,6 @@ const WebRadio = () => {
 
       {/* ── Controls ── */}
       <div className="px-2 py-1.5 flex items-center gap-1.5 border-t border-border/15">
-        {/* Play — angular military button */}
         <button
           onClick={togglePlay}
           className="relative w-9 h-9 shrink-0 border border-primary/40 bg-primary/8 hover:bg-primary/18 transition-all flex items-center justify-center"
@@ -246,11 +327,7 @@ const WebRadio = () => {
           aria-label={playing ? "Pausar" : "Play"}
         >
           {connecting ? (
-            <motion.div
-              className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }}
-            />
+            <motion.div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
           ) : playing ? (
             <Pause className="w-3.5 h-3.5 text-primary" />
           ) : (
@@ -266,7 +343,6 @@ const WebRadio = () => {
           )}
         </button>
 
-        {/* Mute */}
         <button
           onClick={toggleMute}
           className="w-7 h-7 shrink-0 border border-accent/25 bg-accent/5 hover:bg-accent/12 transition-all flex items-center justify-center"
@@ -276,7 +352,6 @@ const WebRadio = () => {
           {muted ? <VolumeX className="w-3 h-3 text-accent/50" /> : <Volume2 className="w-3 h-3 text-accent/80" />}
         </button>
 
-        {/* Volume slider */}
         <div className="flex-1 relative flex items-center">
           <input
             type="range" min={0} max={1} step={0.01}
@@ -296,7 +371,7 @@ const WebRadio = () => {
         </span>
       </div>
 
-      {/* ── Bottom decorative ── */}
+      {/* ── Bottom ── */}
       <div className="px-2 py-0.5 flex justify-between text-[5px] tracking-[0.2em] text-muted-foreground/15 uppercase border-t border-border/8">
         <span>CODEC: MP3</span>
         <span>LATENCY: LOW</span>
