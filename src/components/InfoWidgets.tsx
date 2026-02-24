@@ -1,76 +1,75 @@
-import { HardDrive, Cpu, ArrowUpDown, Network } from "lucide-react";
-
-const widgets = [
-  {
-    icon: HardDrive,
-    label: "ARMAZENAMENTO (HD)",
-    value: "72% USADO",
-    glowColor: "120 100% 45%",
-    textClass: "text-[hsl(120,100%,45%)]",
-    iconClass: "text-[hsl(120,100%,45%)]",
-    delay: "0s",
-  },
-  {
-    icon: Cpu,
-    label: "TEMPERATURA (CPU)",
-    value: "45°C",
-    glowColor: "15 100% 55%",
-    textClass: "text-[hsl(15,100%,55%)]",
-    iconClass: "text-[hsl(15,100%,55%)]",
-    delay: "0.7s",
-  },
-  {
-    icon: ArrowUpDown,
-    label: "REDE (UP/DOWN)",
-    value: "⬆ 150 / ⬇ 420 Mbps",
-    glowColor: "190 100% 55%",
-    textClass: "text-accent",
-    iconClass: "text-accent",
-    delay: "1.4s",
-  },
-  {
-    icon: Network,
-    label: "IPS NA REDE",
-    value: "14 CONECTADOS",
-    subtitle: "Atualiza em 5m",
-    glowColor: "50 100% 55%",
-    textClass: "text-[hsl(50,100%,55%)]",
-    iconClass: "text-[hsl(50,100%,55%)]",
-    delay: "2.1s",
-  },
-];
+import { HardDrive, Cpu, ArrowUp, ArrowDown, Network } from "lucide-react";
 
 const InfoWidgets = () => {
   return (
     <>
       <style>{`
-        @keyframes iconGlow {
-          0%, 100% { filter: drop-shadow(0 0 2px var(--glow)) brightness(1); }
-          50% { filter: drop-shadow(0 0 8px var(--glow)) brightness(1.3); }
+        @keyframes iconGlowIntense {
+          0%, 100% { filter: drop-shadow(0 0 3px var(--glow)) brightness(0.9); }
+          50% { filter: drop-shadow(0 0 14px var(--glow)) drop-shadow(0 0 24px var(--glow)) brightness(1.5); }
         }
       `}</style>
       <div className="grid grid-cols-2 gap-2">
-        {widgets.map((w) => (
-          <div
-            key={w.label}
-            className="flex items-center gap-2 bg-muted/50 rounded-sm px-3 py-2 border border-border"
-          >
-            <w.icon
-              className={`w-4 h-4 shrink-0 ${w.iconClass}`}
-              style={{
-                "--glow": `hsl(${w.glowColor})`,
-                animation: `iconGlow 2.5s ease-in-out ${w.delay} infinite`,
-              } as React.CSSProperties}
+        {/* BLOCO 1 - HD */}
+        <div className="bg-muted/50 rounded-sm border border-border overflow-hidden">
+          <div className="px-2 py-1 border-b border-border bg-muted/80">
+            <span className="text-[7px] font-display tracking-[0.2em] text-[hsl(120,100%,45%)]">HD</span>
+          </div>
+          <div className="flex items-center gap-2 px-2 py-1.5">
+            <HardDrive
+              className="w-4 h-4 shrink-0 text-[hsl(120,100%,45%)]"
+              style={{ "--glow": "hsl(120,100%,45%)", animation: "iconGlowIntense 2s ease-in-out infinite" } as React.CSSProperties}
             />
-            <div className="flex flex-col min-w-0">
-              <span className="text-[8px] text-muted-foreground tracking-wider truncate">{w.label}</span>
-              <span className={`text-[11px] font-display leading-tight ${w.textClass}`}>{w.value}</span>
-              {"subtitle" in w && w.subtitle && (
-                <span className="text-[7px] text-muted-foreground/50 tracking-wider">{w.subtitle}</span>
-              )}
+            <span className="text-[10px] font-display text-[hsl(120,100%,45%)]">72%</span>
+          </div>
+        </div>
+
+        {/* BLOCO 2 - TEMP */}
+        <div className="bg-muted/50 rounded-sm border border-border overflow-hidden">
+          <div className="px-2 py-1 border-b border-border bg-muted/80">
+            <span className="text-[7px] font-display tracking-[0.2em] text-[hsl(15,100%,55%)]">TEMP.</span>
+          </div>
+          <div className="flex items-center gap-2 px-2 py-1.5">
+            <Cpu
+              className="w-4 h-4 shrink-0 text-[hsl(15,100%,55%)]"
+              style={{ "--glow": "hsl(15,100%,55%)", animation: "iconGlowIntense 2s ease-in-out 0.5s infinite" } as React.CSSProperties}
+            />
+            <span className="text-[10px] font-display text-[hsl(15,100%,55%)]">45°C</span>
+          </div>
+        </div>
+
+        {/* BLOCO 3 - REDE */}
+        <div className="bg-muted/50 rounded-sm border border-border overflow-hidden">
+          <div className="px-2 py-1 border-b border-border bg-muted/80">
+            <span className="text-[7px] font-display tracking-[0.2em] text-accent">REDE</span>
+          </div>
+          <div className="flex items-center gap-2 px-2 py-1.5">
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-1">
+                <ArrowUp className="w-3 h-3 text-accent" style={{ "--glow": "hsl(50,100%,50%)", animation: "iconGlowIntense 2s ease-in-out 1s infinite" } as React.CSSProperties} />
+                <span className="text-[9px] font-display text-accent">150 Mbps</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <ArrowDown className="w-3 h-3 text-accent" style={{ "--glow": "hsl(50,100%,50%)", animation: "iconGlowIntense 2s ease-in-out 1.3s infinite" } as React.CSSProperties} />
+                <span className="text-[9px] font-display text-accent">420 Mbps</span>
+              </div>
             </div>
           </div>
-        ))}
+        </div>
+
+        {/* BLOCO 4 - IPS */}
+        <div className="bg-muted/50 rounded-sm border border-border overflow-hidden">
+          <div className="px-2 py-1 border-b border-border bg-muted/80">
+            <span className="text-[7px] font-display tracking-[0.2em] text-[hsl(50,100%,55%)]">IPS NA REDE</span>
+          </div>
+          <div className="flex items-center gap-2 px-2 py-1.5">
+            <Network
+              className="w-4 h-4 shrink-0 text-[hsl(50,100%,55%)]"
+              style={{ "--glow": "hsl(50,100%,55%)", animation: "iconGlowIntense 2s ease-in-out 1.6s infinite" } as React.CSSProperties}
+            />
+            <span className="text-[10px] font-display text-[hsl(50,100%,55%)]">14 IPs</span>
+          </div>
+        </div>
       </div>
     </>
   );
