@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
-import LoadingScreen from "@/components/LoadingScreen";
 import HeaderGlitchLogo from "@/components/HeaderGlitchLogo";
 import HudClock from "@/components/HudClock";
 import HudPanel from "@/components/HudPanel";
@@ -30,7 +29,6 @@ const fadeUp = {
 };
 
 const Index = () => {
-  const [loading, setLoading] = useState(true);
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [files, setFiles] = useState<FsEntry[]>([]);
   const [totalSize, setTotalSize] = useState(0);
@@ -77,9 +75,7 @@ const Index = () => {
   // No height sync needed - fixed heights via CSS
 
   return (
-    <>
-      {loading && <LoadingScreen onComplete={() => setLoading(false)} />}
-      <div className="bg-background hud-grid relative overflow-hidden w-screen h-screen flex flex-col">
+    <div className="bg-background hud-grid relative overflow-hidden w-screen h-screen flex flex-col">
         <SpaceBackground />
         {/* Header */}
         <header className="border-b border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">
@@ -226,7 +222,6 @@ const Index = () => {
           <span className="text-[10px] text-muted-foreground tracking-widest">BUILD 2.0.0 // ALL SYSTEMS NOMINAL</span>
         </footer>
       </div>
-    </>
   );
 };
 
