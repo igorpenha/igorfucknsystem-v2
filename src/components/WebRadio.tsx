@@ -91,12 +91,10 @@ const WebRadio = () => {
           const bar = barsRef.current[i];
           if (!bar) continue;
 
-          // Heavy bass compression + balanced mid/high boost
-          const bassAttenuation = i < 6 ? 0.3 + (i / 6) * 0.5 : 1; // compress first 6 bins hard
-          const midBoost = i >= 6 && i < 14 ? 1.1 : 1;
-          const highBoost = 1 + Math.log2(1 + i) * 0.3;
-          const raw = Math.min((dataArray[i] / 255) * bassAttenuation * midBoost * highBoost, 1);
-          const val = Math.pow(raw, 0.75);
+          // Natural spectrum: bass stays dominant, gentle high-freq lift only
+          const highLift = 1 + (i / BAR_COUNT) * 0.35;
+          const raw = Math.min((dataArray[i] / 255) * highLift, 1);
+          const val = Math.pow(raw, 0.85);
 
           const h = Math.max(val * 80, 1.5); // cap at 80% height
           const hue = 185 + (i / BAR_COUNT) * 135;
