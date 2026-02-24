@@ -78,9 +78,11 @@ const Index = () => {
   useEffect(() => {
     const sync = () => {
       if (calcRef.current && fileViewerRef.current) {
-        const calcBottom = calcRef.current.getBoundingClientRect().bottom;
+        const calcRect = calcRef.current.getBoundingClientRect();
         const viewerTop = fileViewerRef.current.getBoundingClientRect().top;
-        const h = calcBottom - viewerTop;
+        // Align file viewer bottom with ~1 button row above calculator bottom (top of + button)
+        const oneRowH = 44; // approximate button row height
+        const h = calcRect.bottom - viewerTop - oneRowH;
         if (h > 80) setFileViewerH(h);
       }
       // Camera panel: align bottom with left column bottom
