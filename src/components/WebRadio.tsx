@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Volume2, VolumeX } from "lucide-react";
+import Hls from "hls.js";
 import VinylDisc from "./radio/VinylDisc";
 import CyberPlayButton from "./radio/CyberPlayButton";
 import TrackHistory from "./radio/TrackHistory";
@@ -191,21 +192,54 @@ const WebRadio = () => {
     setEnergy(0);
   }, []);
 
+  const hlsRef = useRef<Hls | null>(null);
+
   const togglePlay = useCallback(() => {
     if (playing) {
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
       audioRef.current?.pause();
       audioRef.current = null;
       stopAnalyser();
       setPlaying(false);
     } else {
-      const audio = new Audio(STREAM_URL);
+      const audio = new Audio();
       audio.crossOrigin = "anonymous";
       audio.volume = muted ? 0 : 1;
       audioRef.current = audio;
-      audio.play().then(() => {
-        setPlaying(true);
-        startAnalyser();
-      }).catch(console.error);
+
+      const tryPlay = () => {
+        audio.play().then(() => {
+          setPlaying(true);
+          startAnalyser();
+        }).catch((err) => {
+          console.error("Play failed:", err);
+          setMetadata(prev => ({ ...prev, title: "Erro ao reproduzir", artist: "Verifique a conexão" }));
+        });
+      };
+
+      // Try HLS first if supported
+      if (Hls.isSupported()) {
+        const hls = new Hls({ enableWorker: false });
+        hlsRef.current = hls;
+        hls.loadSource(STREAM_URL);
+        hls.attachMedia(audio);
+        hls.on(Hls.Events.MANIFEST_PARSED, tryPlay);
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          console.warn("HLS error, falling back to direct:", data);
+          hls.destroy();
+          hlsRef.current = null;
+          // Fallback: direct URL
+          audio.src = STREAM_URL;
+          audio.load();
+          tryPlay();
+        });
+      } else {
+        // Direct playback (Safari native HLS or plain stream)
+        audio.src = STREAM_URL;
+        audio.load();
+        tryPlay();
+      }
     }
   }, [playing, muted, startAnalyser, stopAnalyser]);
 
