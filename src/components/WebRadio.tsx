@@ -109,7 +109,8 @@ const WebRadio = () => {
         if (!res.ok) throw new Error("metadata fetch failed");
         const data = await res.json();
         if (active) {
-          const newCover = data.coverUrl || "";
+          const newCover = `${FILE_API_BASE_URL}/api/radio/artwork?t=${Date.now()}`;
+          console.log("URL da Capa:", newCover);
           setTrack(prev => {
             if (prev.cover !== newCover) setCoverError(false);
             return {
@@ -358,7 +359,7 @@ const WebRadio = () => {
             <img
               src={track.cover}
               alt="Album cover"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover min-w-[112px] min-h-[112px]"
               onError={() => setCoverError(true)}
             />
           ) : (
