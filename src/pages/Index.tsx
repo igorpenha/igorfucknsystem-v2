@@ -189,10 +189,12 @@ const Index = () => {
           </div>
 
           {/* Right Column */}
-          <div className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
-            <motion.div ref={webRadioRef} custom={1} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
-              <HudPanel title="WebRadio">
-                <WebRadio />
+          <div className="lg:col-span-3 min-h-0 grid grid-rows-[minmax(0,1fr)_auto] gap-3 overflow-hidden">
+            <motion.div ref={webRadioRef} custom={1} initial="hidden" animate="visible" variants={fadeUp} className="min-h-0 overflow-hidden">
+              <HudPanel title="WebRadio" className="h-full overflow-hidden flex flex-col">
+                <div className="min-h-0 overflow-hidden">
+                  <WebRadio />
+                </div>
               </HudPanel>
             </motion.div>
 
