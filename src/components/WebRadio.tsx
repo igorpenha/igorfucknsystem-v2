@@ -91,10 +91,12 @@ const WebRadio = () => {
           const bar = barsRef.current[i];
           if (!bar) continue;
 
-          // Logarithmic boost for higher frequencies
-          const boost = 1 + Math.log2(1 + i) * 0.25;
-          const raw = Math.min((dataArray[i] / 255) * boost, 1);
-          const val = Math.pow(raw, 0.85); // slight compression for fullness
+          // Bass compression + high-freq boost for balanced spectrum
+          const bassAttenuation = i < 4 ? 0.45 + (i / 4) * 0.35 : 1; // compress first 4 bins
+          const midBoost = i >= 4 && i < 12 ? 1.15 : 1;
+          const highBoost = 1 + Math.log2(1 + i) * 0.35;
+          const raw = Math.min((dataArray[i] / 255) * bassAttenuation * midBoost * highBoost, 1);
+          const val = Math.pow(raw, 0.7); // gentle compression
 
           const h = Math.max(val * 100, 1.5);
           const hue = 185 + (i / BAR_COUNT) * 135;
