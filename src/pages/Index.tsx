@@ -103,7 +103,7 @@ const Index = () => {
   return (
     <>
       {loading && <LoadingScreen onComplete={() => setLoading(false)} />}
-      <div className="bg-background hud-grid relative overflow-x-hidden overflow-y-auto w-full min-h-screen flex flex-col">
+      <div className="bg-background hud-grid relative overflow-hidden w-screen h-screen flex flex-col">
         <SpaceBackground />
         {/* Header */}
         <header className="border-b border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">
@@ -124,9 +124,9 @@ const Index = () => {
         </header>
 
         {/* Main Content */}
-        <main className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-3 relative z-10 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        <main className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-3 relative z-10 flex-1 min-h-0 overflow-hidden">
           {/* Left Column - File Menu */}
-          <div ref={leftColRef} className="lg:col-span-3 flex flex-col gap-3 min-h-0">
+          <div ref={leftColRef} className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
             <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp}>
               <HudPanel title="Arquivos">
                 <FileMenu
@@ -189,7 +189,7 @@ const Index = () => {
           </div>
 
           {/* Right Column */}
-          <div className="lg:col-span-3 flex flex-col gap-3 min-h-0">
+          <div className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
             <motion.div ref={webRadioRef} custom={1} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
               <HudPanel title="WebRadio">
                 <WebRadio />
