@@ -69,7 +69,7 @@ const Index = () => {
   }, [activeFolder, loadFiles]);
 
   return (
-    <div className="bg-background hud-grid relative overflow-hidden w-screen h-screen flex flex-col">
+    <div className="bg-background relative overflow-hidden w-screen h-screen flex flex-col">
       <SpaceBackground />
 
       {/* Header */}
@@ -114,7 +114,7 @@ const Index = () => {
         <div className="lg:col-span-6 lg:row-span-1 min-h-0 overflow-hidden">
           <motion.div custom={1} initial="hidden" animate="visible" variants={fadeUp} className="h-full">
             <HudPanel title="Lista de Arquivos" className="overflow-hidden flex flex-col h-full">
-              <div className="overflow-y-auto flex-1 min-h-0 hud-scroll rounded-sm" style={{ background: "hsl(230 20% 4% / 0.2)", backdropFilter: "blur(12px)" }}>
+              <div className="overflow-y-auto flex-1 min-h-0 hud-scroll rounded-sm" style={{ background: "hsl(230 20% 4% / 0.08)", backdropFilter: "blur(20px)" }}>
                 {activeFolder ? (
                   <FileViewer
                     folderName={activeFolder}
@@ -187,7 +187,7 @@ const Index = () => {
           </motion.div>
           <motion.div custom={4} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0">
             <HudPanel title="Info do Sistema" className="h-full overflow-hidden flex flex-col">
-              <div className="flex-1 min-h-0 overflow-y-auto hud-scroll">
+              <div className="flex-1 min-h-0 overflow-hidden">
                 <InfoWidgets />
               </div>
             </HudPanel>
@@ -198,7 +198,7 @@ const Index = () => {
         <div className="lg:col-span-6 lg:row-span-1 min-h-0 overflow-hidden">
           <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="h-full">
             <HudPanel title="FUCKN CHAT" className="h-full overflow-hidden flex flex-col">
-              <div className="flex-1 min-h-0 rounded-sm" style={{ background: "hsl(230 20% 4% / 0.2)", backdropFilter: "blur(12px)" }}>
+              <div className="flex-1 min-h-0 rounded-sm" style={{ background: "hsl(230 20% 4% / 0.08)", backdropFilter: "blur(20px)" }}>
                 <FucknChat />
               </div>
             </HudPanel>
