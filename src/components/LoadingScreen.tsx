@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import logoImage from "@/assets/logo-new.png";
 
@@ -62,192 +62,6 @@ const DigitalNoise = ({ active }: { active: boolean }) => {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-40 pointer-events-none mix-blend-screen" />;
 };
 
-// Collapsing logo canvas — progressively disintegrates the logo into particles
-interface Particle {
-  x: number; y: number;
-  origX: number; origY: number;
-  vx: number; vy: number;
-  r: number; g: number; b: number; a: number;
-  size: number;
-  delay: number; // 0-1, when this particle starts moving
-  life: number;
-}
-
-const CollapsingLogo = ({ progress, size }: { progress: number; size: number }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
-  const imageRef = useRef<HTMLImageElement | null>(null);
-  const initializedRef = useRef(false);
-
-  // Load image and extract particles once
-  useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      imageRef.current = img;
-      // Extract pixel data
-      const offscreen = document.createElement("canvas");
-      offscreen.width = size;
-      offscreen.height = size;
-      const octx = offscreen.getContext("2d")!;
-      octx.drawImage(img, 0, 0, size, size);
-      const data = octx.getImageData(0, 0, size, size).data;
-
-      const particles: Particle[] = [];
-      const step = 3; // sample every 3 pixels for performance
-      const cx = size / 2;
-      const cy = size / 2;
-      for (let y = 0; y < size; y += step) {
-        for (let x = 0; x < size; x += step) {
-          const i = (y * size + x) * 4;
-          const a = data[i + 3];
-          if (a < 30) continue; // skip transparent
-          const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2) / (size / 2);
-          const angle = Math.atan2(y - cy, x - cx);
-          // Particles fly outward in their angle + some randomness
-          const speed = 1.5 + Math.random() * 3;
-          particles.push({
-            x, y,
-            origX: x, origY: y,
-            vx: Math.cos(angle + (Math.random() - 0.5) * 0.8) * speed,
-            vy: Math.sin(angle + (Math.random() - 0.5) * 0.8) * speed - Math.random() * 1.5,
-            r: data[i], g: data[i + 1], b: data[i + 2], a: a / 255,
-            size: step * (0.8 + Math.random() * 0.6),
-            delay: dist * 0.4 + Math.random() * 0.3, // outer pixels collapse later
-            life: 0.5 + Math.random() * 0.5,
-          });
-        }
-      }
-      particlesRef.current = particles;
-      initializedRef.current = true;
-    };
-    img.src = logoImage;
-  }, [size]);
-
-  // Render loop
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
-    canvas.width = size;
-    canvas.height = size;
-
-    let animId: number;
-    const draw = () => {
-      ctx.clearRect(0, 0, size, size);
-
-      if (!initializedRef.current || !imageRef.current) {
-        // Just draw the image normally while loading particles
-        if (imageRef.current) {
-          ctx.drawImage(imageRef.current, 0, 0, size, size);
-        }
-        animId = requestAnimationFrame(draw);
-        return;
-      }
-
-      const collapseProgress = progress; // 0 to 1
-
-      // Phase: 0-0.3 = stable with glitches, 0.3-0.85 = progressive collapse, 0.85-1 = full dissolution
-      if (collapseProgress < 0.25) {
-        // Draw image normally with occasional glitch
-        ctx.drawImage(imageRef.current, 0, 0, size, size);
-
-        // Subtle glitch lines that increase with progress
-        const glitchIntensity = collapseProgress / 0.25;
-        const numGlitches = Math.floor(glitchIntensity * 4);
-        for (let i = 0; i < numGlitches; i++) {
-          const gy = Math.random() * size;
-          const gh = 1 + Math.random() * 3;
-          const shift = (Math.random() - 0.5) * glitchIntensity * 12;
-          ctx.drawImage(canvas, 0, gy, size, gh, shift, gy, size, gh);
-        }
-      } else {
-        // Progressive collapse — draw particles
-        const t = (collapseProgress - 0.25) / 0.75; // normalize 0-1 for collapse phase
-
-        // Still draw some of the original image, fading out
-        if (t < 0.6) {
-          ctx.globalAlpha = Math.max(0, 1 - t * 2);
-          ctx.drawImage(imageRef.current, 0, 0, size, size);
-          ctx.globalAlpha = 1;
-        }
-
-        // Draw particles
-        const particles = particlesRef.current;
-        let remnantCount = 0;
-        for (const p of particles) {
-          const particleT = Math.max(0, (t - p.delay) / (1 - p.delay));
-          if (particleT <= 0) {
-            // Not yet collapsing — draw in place
-            ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.a})`;
-            ctx.fillRect(p.origX, p.origY, p.size, p.size);
-            continue;
-          }
-
-          // Ease out
-          const ease = 1 - Math.pow(1 - particleT, 2);
-          const drift = ease * 40;
-          const px = p.origX + p.vx * drift;
-          const py = p.origY + p.vy * drift;
-          const alpha = Math.max(0, p.a * (1 - particleT));
-
-          if (alpha <= 0.01) continue;
-
-          // Glow effect for bright particles
-          const brightness = (p.r + p.g + p.b) / 3;
-          if (brightness > 100 && particleT > 0.3) {
-            const hue = p.r > p.b ? (p.g > p.r ? 50 : 320) : 190;
-            ctx.shadowColor = `hsl(${hue}, 100%, 60%)`;
-            ctx.shadowBlur = 4 + particleT * 6;
-          }
-
-          ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${alpha})`;
-          const shrink = p.size * (1 - particleT * 0.5);
-          ctx.fillRect(px, py, Math.max(0.5, shrink), Math.max(0.5, shrink));
-          ctx.shadowBlur = 0;
-
-          // Remnant trace — tiny glowing dots left behind
-          if (particleT > 0.7 && particleT < 0.95 && Math.random() < 0.04) {
-            remnantCount++;
-          }
-        }
-
-        // Draw remnant traces — small glowing dots in the void
-        if (t > 0.5) {
-          const remnantAlpha = Math.min(1, (t - 0.5) * 3) * Math.max(0, 1 - (t - 0.8) * 5);
-          if (remnantAlpha > 0) {
-            for (const p of particles) {
-              if (Math.random() > 0.008) continue;
-              const hue = [190, 320, 50][Math.floor(Math.random() * 3)];
-              ctx.fillStyle = `hsla(${hue}, 100%, 65%, ${remnantAlpha * (0.3 + Math.random() * 0.5)})`;
-              ctx.shadowColor = `hsl(${hue}, 100%, 60%)`;
-              ctx.shadowBlur = 3;
-              const rx = p.origX + (Math.random() - 0.5) * 20;
-              const ry = p.origY + (Math.random() - 0.5) * 20;
-              ctx.beginPath();
-              ctx.arc(rx, ry, 0.5 + Math.random() * 1.5, 0, Math.PI * 2);
-              ctx.fill();
-            }
-            ctx.shadowBlur = 0;
-          }
-        }
-      }
-
-      animId = requestAnimationFrame(draw);
-    };
-    animId = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animId);
-  }, [progress, size]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={size}
-      height={size}
-      className="w-full h-full"
-    />
-  );
-};
 
 const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
@@ -255,8 +69,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  // Responsive logo size
-  const logoSize = typeof window !== "undefined" && window.innerWidth >= 768 ? 380 : 260;
 
   // Boot sound - synthesized
   useEffect(() => {
@@ -387,12 +199,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   const isPulse = phase === "pulse";
   
 
-  // Collapse progress: starts at ~30% loading, accelerates toward end
-  const collapseProgress = useMemo(() => {
-    if (progress < 0.3) return 0;
-    const t = (progress - 0.3) / 0.7;
-    return Math.pow(t, 1.3); // ease-in acceleration
-  }, [progress]);
 
   return (
     <AnimatePresence>
@@ -454,22 +260,17 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
           >
             <DigitalNoise active={isBoot} />
 
-            {/* Collapsing logo canvas — replaces static img during pulse phase */}
-            {isPulse ? (
-              <CollapsingLogo progress={collapseProgress} size={logoSize} />
-            ) : (
-              <img
-                src={logoImage}
-                alt="IGOR FUNK SYSTEM"
-                className="w-full h-full object-contain relative z-10"
-                style={{
-                  filter: isBoot
-                    ? "drop-shadow(0 0 4px hsl(190 100% 50% / 0.2)) grayscale(0.5)"
-                    : "drop-shadow(0 0 15px hsl(190 100% 50% / 0.5)) drop-shadow(0 0 30px hsl(320 100% 50% / 0.3))",
-                  transition: "filter 0.3s ease",
-                }}
-              />
-            )}
+            <img
+              src={logoImage}
+              alt="IGOR FUNK SYSTEM"
+              className="w-full h-full object-contain relative z-10"
+              style={{
+                filter: isBoot
+                  ? "drop-shadow(0 0 4px hsl(190 100% 50% / 0.2)) grayscale(0.5)"
+                  : "drop-shadow(0 0 15px hsl(190 100% 50% / 0.5)) drop-shadow(0 0 30px hsl(320 100% 50% / 0.3))",
+                transition: "filter 0.3s ease",
+              }}
+            />
 
             {/* Chromatic aberration during boot */}
             {isBoot && (
@@ -507,9 +308,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
               }}
               initial={{ opacity: 0, y: 20 }}
               animate={
-                collapseProgress > 0.5
-                  ? { opacity: Math.max(0, 1 - (collapseProgress - 0.5) * 2), y: 0, scale: 1 }
-                  : isReveal || isPulse
+                isReveal || isPulse
                   ? { opacity: 1, y: 0, scale: 1 }
                   : { opacity: 0, y: 20 }
               }
@@ -522,9 +321,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
               style={{ color: "hsl(190 100% 60%)", textShadow: "0 0 10px hsl(190 100% 50% / 0.5)" }}
               initial={{ opacity: 0, y: 10 }}
               animate={
-                collapseProgress > 0.5
-                  ? { opacity: Math.max(0, 1 - (collapseProgress - 0.5) * 2), y: 0 }
-                  : isReveal || isPulse
+                isReveal || isPulse
                   ? { opacity: 1, y: 0 }
                   : { opacity: 0, y: 10 }
               }
