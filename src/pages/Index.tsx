@@ -96,11 +96,11 @@ const Index = () => {
         </header>
 
         {/* Main Content */}
-        <main className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-3 relative z-10 flex-1 min-h-0 overflow-hidden">
+        <main className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-2 gap-3 relative z-10 flex-1 min-h-0 overflow-hidden">
           {/* Left Column - File Menu + Tool Buttons */}
-          <div ref={leftColRef} className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
-            <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
-              <HudPanel title="Pastas" className="overflow-hidden flex flex-col h-[50vh] max-h-[50vh]">
+          <div ref={leftColRef} className="lg:col-span-3 lg:row-span-2 flex flex-col gap-3 min-h-0 overflow-hidden">
+            <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0">
+              <HudPanel title="Pastas" className="overflow-hidden flex flex-col h-full">
                 <div className="flex-1 min-h-0 overflow-y-auto hud-scroll">
                   <FileMenu
                     activeFolder={activeFolder}
@@ -152,8 +152,8 @@ const Index = () => {
           </div>
 
           {/* Center Column - File Viewer + Camera */}
-          <div className="lg:col-span-6 flex flex-col gap-3 min-h-0">
-            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0 h-[50vh] max-h-[50vh]">
+          <div className="lg:col-span-6 lg:row-span-2 flex flex-col gap-3 min-h-0">
+            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0">
               <HudPanel title="Lista de Arquivos" className="overflow-hidden flex flex-col h-full">
                 <div className="overflow-y-auto flex-1 min-h-0 hud-scroll">
                   {activeFolder ? (
@@ -181,13 +181,13 @@ const Index = () => {
             </motion.div>
 
             {/* Security Camera Panel - fills remaining space */}
-            <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-[350px] overflow-hidden">
+            <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0 overflow-hidden">
               <SecurityCameraPanel />
             </motion.div>
           </div>
 
           {/* Right Column */}
-          <div className="lg:col-span-3 min-h-0 grid grid-rows-[minmax(0,1fr)_auto] gap-3 overflow-hidden">
+          <div className="lg:col-span-3 lg:row-span-2 min-h-0 grid grid-rows-[minmax(0,1fr)_auto] gap-3 overflow-hidden">
             <motion.div ref={webRadioRef} custom={1} initial="hidden" animate="visible" variants={fadeUp} className="min-h-0 overflow-hidden">
               <HudPanel title="IGOR FUCKN STATION" className="h-full overflow-hidden flex flex-col">
                 <WebRadio />

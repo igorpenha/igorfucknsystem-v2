@@ -35,11 +35,11 @@ const CoverFlowCarousel = ({
   };
 
   return (
-    <div className="flex items-center justify-center gap-3 w-full" style={{ height: 90 }}>
+    <div className="flex items-center justify-center gap-2 w-full px-2" style={{ height: 110 }}>
       {/* Previous */}
       <div
-        className="shrink-0 overflow-hidden border border-border/30 transition-opacity duration-500"
-        style={{ width: 56, height: 56, opacity: 0.5, clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}
+        className="overflow-hidden border border-border/30 transition-opacity duration-500"
+        style={{ flex: "1 1 30%", maxWidth: "30%", aspectRatio: "1", opacity: 0.5, clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}
       >
         {prevCover && !errors.prev ? (
           <img src={prevCover} alt="Previous" className="w-full h-full object-cover" onError={() => handleError("prev")} />
@@ -50,10 +50,11 @@ const CoverFlowCarousel = ({
 
       {/* Current — highlighted */}
       <div
-        className="shrink-0 overflow-hidden relative transition-all duration-500"
+        className="overflow-hidden relative transition-all duration-500"
         style={{
-          width: 80,
-          height: 80,
+          flex: "1 1 38%",
+          maxWidth: "38%",
+          aspectRatio: "1",
           clipPath: "polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%)",
           border: `1.5px solid ${playing ? "hsl(var(--primary))" : "hsl(var(--border))"}`,
           boxShadow: playing
@@ -66,7 +67,6 @@ const CoverFlowCarousel = ({
         ) : (
           <Placeholder />
         )}
-        {/* Scan line */}
         {playing && (
           <div
             className="absolute inset-0 pointer-events-none animate-[scanLine_2.5s_linear_infinite]"
@@ -79,8 +79,8 @@ const CoverFlowCarousel = ({
 
       {/* Next */}
       <div
-        className="shrink-0 overflow-hidden border border-border/30 transition-opacity duration-500"
-        style={{ width: 56, height: 56, opacity: 0.5, clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}
+        className="overflow-hidden border border-border/30 transition-opacity duration-500"
+        style={{ flex: "1 1 30%", maxWidth: "30%", aspectRatio: "1", opacity: 0.5, clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}
       >
         {nextCover && !errors.next ? (
           <img src={nextCover} alt="Next" className="w-full h-full object-cover" onError={() => handleError("next")} />
