@@ -3,18 +3,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, VolumeX, Play, Pause } from "lucide-react";
 
 const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
-const BAR_COUNT = 24;
+const BAR_COUNT = 32;
 
-// Simulated spectrum — generates organic-looking bar heights
 function generateBars(prev: number[], vol: number): number[] {
   return prev.map((old, i) => {
     const freq = i / BAR_COUNT;
-    // Bass-heavy curve: lower bars are taller
-    const base = (1 - freq * 0.6) * vol;
-    const rand = Math.random() * 0.5 + 0.5;
-    const target = base * rand * (0.6 + Math.sin(Date.now() / (300 + i * 40)) * 0.4);
-    // Smooth interpolation
-    return old * 0.3 + target * 0.7;
+    const base = (1 - freq * 0.55) * vol;
+    const rand = Math.random() * 0.45 + 0.55;
+    const wave = Math.sin(Date.now() / (280 + i * 35)) * 0.35;
+    const target = base * rand * (0.65 + wave);
+    return old * 0.28 + target * 0.72;
   });
 }
 
@@ -27,7 +25,14 @@ const WebRadio = () => {
   const frameRef = useRef(0);
   const [bars, setBars] = useState<number[]>(new Array(BAR_COUNT).fill(0));
 
-  // Simulated visualizer loop
+  // Metadata state (placeholder until backend integration)
+  const [track, setTrack] = useState({
+    title: "Aguardando sinal...",
+    artist: "---",
+    album: "---",
+    cover: "",
+  });
+
   const startVisualizer = useCallback(() => {
     const tick = () => {
       setBars(prev => generateBars(prev, volume));
@@ -38,10 +43,9 @@ const WebRadio = () => {
 
   const stopVisualizer = useCallback(() => {
     cancelAnimationFrame(frameRef.current);
-    // Smooth decay
     const decay = () => {
       setBars(prev => {
-        const next = prev.map(v => v * 0.85);
+        const next = prev.map(v => v * 0.82);
         if (next.every(v => v < 0.01)) return new Array(BAR_COUNT).fill(0);
         requestAnimationFrame(decay);
         return next;
@@ -50,11 +54,15 @@ const WebRadio = () => {
     decay();
   }, []);
 
-  // Audio events
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const onPlaying = () => { setConnecting(false); setPlaying(true); startVisualizer(); };
+    const onPlaying = () => {
+      setConnecting(false);
+      setPlaying(true);
+      startVisualizer();
+      setTrack(t => ({ ...t, title: t.title === "Aguardando sinal..." ? "LIVE BROADCAST" : t.title }));
+    };
     const onPause = () => { setPlaying(false); setConnecting(false); stopVisualizer(); };
     const onError = () => { setConnecting(false); setPlaying(false); stopVisualizer(); };
     audio.addEventListener("playing", onPlaying);
@@ -72,11 +80,15 @@ const WebRadio = () => {
     if (!audio) return;
     if (playing || connecting) { audio.pause(); return; }
     setConnecting(true);
+    setTrack(t => ({ ...t, title: "Conectando..." }));
     audio.src = `${STREAM_URL}?t=${Date.now()}`;
     audio.volume = muted ? 0 : volume;
     audio.muted = muted;
     audio.load();
-    audio.play().catch(() => setConnecting(false));
+    audio.play().catch(() => {
+      setConnecting(false);
+      setTrack(t => ({ ...t, title: "Erro de conexão" }));
+    });
   }, [playing, connecting, muted, volume]);
 
   const toggleMute = useCallback(() => {
@@ -97,104 +109,159 @@ const WebRadio = () => {
     <div className="flex flex-col h-full font-mono select-none overflow-hidden relative">
       <audio ref={audioRef} playsInline />
 
-      {/* Decorative HUD text */}
-      <div className="px-3 pt-2 pb-1 flex items-center justify-between text-[7px] tracking-[0.3em] text-muted-foreground/40 uppercase">
+      {/* ── Top decorative bar ── */}
+      <div className="px-2 pt-1.5 pb-1 flex items-center justify-between text-[6px] tracking-[0.3em] uppercase text-muted-foreground/30">
         <span>SYS.NODE // 8050</span>
-        <span>ENCRYPTED STREAM</span>
+        <span className="text-primary/40">STREAM_ENCRYPTED</span>
+        <span>BPM: SYNCING</span>
       </div>
 
-      {/* Title: IGOR FUCKN STATION */}
-      <div className="px-3 pb-1 text-center">
-        <h2 className="text-sm font-display tracking-[0.3em] uppercase leading-tight">
-          <span className="text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]">IGOR </span>
-          <span className="text-accent drop-shadow-[0_0_8px_hsl(var(--accent)/0.6)]">FUCKN </span>
-          <span className="text-neon-green drop-shadow-[0_0_8px_hsl(var(--neon-green)/0.6)]">STATION</span>
+      {/* ── Title ── */}
+      <div className="text-center px-2 pb-1">
+        <h2 className="text-[11px] font-display tracking-[0.35em] uppercase leading-none">
+          <span className="text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]">IGOR </span>
+          <span className="text-accent drop-shadow-[0_0_6px_hsl(var(--accent)/0.5)]">FUCKN </span>
+          <span className="text-neon-green drop-shadow-[0_0_6px_hsl(var(--neon-green)/0.5)]">STATION</span>
         </h2>
       </div>
 
-      {/* LIVE badge */}
-      <div className="flex items-center justify-center gap-2 pb-2">
-        <AnimatePresence>
-          {playing && (
+      {/* ── LIVE Badge ── */}
+      <div className="flex justify-center pb-1.5">
+        <AnimatePresence mode="wait">
+          {playing ? (
             <motion.div
+              key="live"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="flex items-center gap-1.5 px-2 py-0.5 border border-red-500/50 bg-red-500/10"
-              style={{ clipPath: "polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%)" }}
+              className="flex items-center gap-1.5 px-2.5 py-0.5 border border-red-500/40 bg-red-500/10"
+              style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
             >
               <motion.div
-                className="w-1.5 h-1.5 bg-red-500 rounded-full"
-                animate={{ opacity: [1, 0.3, 1] }}
-                transition={{ duration: 1.2, repeat: Infinity }}
+                className="w-1.5 h-1.5 rounded-full bg-red-500"
+                animate={{ opacity: [1, 0.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
               />
-              <span className="text-[8px] tracking-[0.3em] text-red-400 font-display">ON AIR</span>
+              <span className="text-[7px] tracking-[0.3em] text-red-400 font-display">ON AIR</span>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="offline"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-1.5 px-2.5 py-0.5 border border-muted-foreground/15 bg-muted/5"
+              style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/25" />
+              <span className="text-[7px] tracking-[0.3em] text-muted-foreground/40 font-display">
+                {connecting ? "LINKING..." : "OFFLINE"}
+              </span>
             </motion.div>
           )}
         </AnimatePresence>
-        {!playing && (
-          <div className="flex items-center gap-1.5 px-2 py-0.5 border border-muted-foreground/20 bg-muted/10"
-            style={{ clipPath: "polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%)" }}>
-            <div className="w-1.5 h-1.5 bg-muted-foreground/30 rounded-full" />
-            <span className="text-[8px] tracking-[0.3em] text-muted-foreground/50 font-display">
-              {connecting ? "LINKING..." : "OFFLINE"}
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* Spectrum Visualizer */}
-      <div className="px-3 flex-1 min-h-0 flex items-end justify-center gap-[2px] pb-2">
+      {/* ── Album Art + Metadata ── */}
+      <div className="px-2 pb-1.5 flex items-center gap-2.5">
+        {/* Cover art */}
+        <div
+          className="w-14 h-14 shrink-0 border overflow-hidden flex items-center justify-center"
+          style={{
+            borderColor: playing ? "hsl(var(--primary))" : "hsl(var(--border))",
+            boxShadow: playing
+              ? "0 0 12px hsl(var(--primary) / 0.25), inset 0 0 8px hsl(var(--primary) / 0.1)"
+              : "none",
+            background: "hsl(var(--muted) / 0.15)",
+            clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)",
+            transition: "border-color 0.3s, box-shadow 0.3s",
+          }}
+        >
+          {track.cover ? (
+            <img src={track.cover} alt="Album cover" className="w-full h-full object-cover" />
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-0.5">
+              <div className="w-5 h-5 border border-primary/20 flex items-center justify-center" style={{ clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}>
+                <span className="text-[8px] text-primary/30">♫</span>
+              </div>
+              <span className="text-[5px] text-muted-foreground/20 tracking-widest">NO DATA</span>
+            </div>
+          )}
+        </div>
+
+        {/* Track info */}
+        <div className="flex-1 min-w-0 space-y-0.5">
+          <p className="text-[10px] text-foreground font-display tracking-wider truncate leading-tight drop-shadow-[0_0_4px_hsl(var(--primary)/0.3)]">
+            {track.title}
+          </p>
+          <p className="text-[8px] text-accent/70 truncate leading-tight tracking-wider">
+            {track.artist}
+          </p>
+          <p className="text-[7px] text-muted-foreground/40 truncate leading-tight tracking-widest uppercase">
+            {track.album}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Spectrum Visualizer ── */}
+      <div className="px-2 flex-1 min-h-0 flex items-end justify-center gap-[1.5px] pb-1">
         {bars.map((val, i) => {
-          const hue = 180 + (i / BAR_COUNT) * 140; // cyan → magenta
-          const height = Math.max(val * 100, 2);
+          const hue = 185 + (i / BAR_COUNT) * 135;
+          const h = Math.max(val * 100, 1.5);
           return (
             <motion.div
               key={i}
               className="flex-1 min-w-0"
               style={{
-                background: `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.15), hsla(${hue}, 100%, 55%, ${0.4 + val * 0.6}))`,
-                boxShadow: val > 0.3 ? `0 0 ${val * 12}px hsla(${hue}, 100%, 50%, ${val * 0.5})` : "none",
+                background: `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.08), hsla(${hue}, 100%, 55%, ${0.35 + val * 0.65}))`,
+                boxShadow: val > 0.35
+                  ? `0 0 ${val * 10}px hsla(${hue}, 100%, 50%, ${val * 0.4})`
+                  : "none",
                 clipPath: "polygon(1px 0, calc(100% - 1px) 0, 100% 100%, 0 100%)",
               }}
-              animate={{ height: `${height}%` }}
-              transition={{ type: "spring", stiffness: 400, damping: 20, mass: 0.3 }}
+              animate={{ height: `${h}%` }}
+              transition={{ type: "spring", stiffness: 380, damping: 18, mass: 0.25 }}
             />
           );
         })}
       </div>
 
-      {/* Decorative line */}
-      <div className="mx-3 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      {/* ── Signal line ── */}
+      <div className="mx-2 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
 
-      {/* Signal info */}
-      <div className="px-3 py-1 flex justify-between text-[7px] tracking-[0.2em] text-muted-foreground/30 uppercase">
+      {/* ── Decorative status ── */}
+      <div className="px-2 py-0.5 flex justify-between text-[6px] tracking-[0.15em] text-muted-foreground/25 uppercase">
         <span>SIGNAL: {playing ? "OPTIMAL" : "STANDBY"}</span>
+        <span>NODE: {playing ? "ACTV" : "IDLE"}</span>
         <span>FREQ: 8050Hz</span>
       </div>
 
-      {/* Controls */}
-      <div className="px-3 py-2 flex items-center gap-2 border-t border-border/20">
-        {/* Play button - angular cyberpunk style */}
+      {/* ── Controls ── */}
+      <div className="px-2 py-1.5 flex items-center gap-1.5 border-t border-border/15">
+        {/* Play — angular military button */}
         <button
           onClick={togglePlay}
-          className="relative w-10 h-10 shrink-0 border border-primary/50 bg-primary/10 hover:bg-primary/20 transition-all flex items-center justify-center group"
+          className="relative w-9 h-9 shrink-0 border border-primary/40 bg-primary/8 hover:bg-primary/18 transition-all flex items-center justify-center"
           style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
           aria-label={playing ? "Pausar" : "Play"}
         >
           {connecting ? (
-            <motion.div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+            <motion.div
+              className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }}
+            />
           ) : playing ? (
-            <Pause className="w-4 h-4 text-primary" />
+            <Pause className="w-3.5 h-3.5 text-primary" />
           ) : (
-            <Play className="w-4 h-4 text-primary ml-0.5" />
+            <Play className="w-3.5 h-3.5 text-primary ml-0.5" />
           )}
           {playing && (
             <motion.div
-              className="absolute inset-0 border border-primary/30"
+              className="absolute inset-0 border border-primary/20"
               style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
-              animate={{ opacity: [0.5, 0, 0.5] }}
-              transition={{ duration: 2, repeat: Infinity }}
+              animate={{ opacity: [0.4, 0, 0.4] }}
+              transition={{ duration: 1.8, repeat: Infinity }}
             />
           )}
         </button>
@@ -202,38 +269,38 @@ const WebRadio = () => {
         {/* Mute */}
         <button
           onClick={toggleMute}
-          className="w-8 h-8 shrink-0 border border-accent/30 bg-accent/5 hover:bg-accent/15 transition-all flex items-center justify-center"
+          className="w-7 h-7 shrink-0 border border-accent/25 bg-accent/5 hover:bg-accent/12 transition-all flex items-center justify-center"
           style={{ clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}
           aria-label="Mute"
         >
-          {muted ? <VolumeX className="w-3.5 h-3.5 text-accent/60" /> : <Volume2 className="w-3.5 h-3.5 text-accent" />}
+          {muted ? <VolumeX className="w-3 h-3 text-accent/50" /> : <Volume2 className="w-3 h-3 text-accent/80" />}
         </button>
 
-        {/* Volume slider - cyberpunk track */}
-        <div className="flex-1 relative h-8 flex items-center">
+        {/* Volume slider */}
+        <div className="flex-1 relative flex items-center">
           <input
             type="range" min={0} max={1} step={0.01}
             value={muted ? 0 : volume}
             onChange={handleVolume}
-            className="w-full h-2 appearance-none cursor-pointer"
+            className="w-full h-1.5 appearance-none cursor-pointer"
             style={{
               background: `linear-gradient(to right, hsl(var(--primary)) ${(muted ? 0 : volume) * 100}%, hsl(var(--muted)) ${(muted ? 0 : volume) * 100}%)`,
-              clipPath: "polygon(0 30%, 100% 0, 100% 70%, 0 100%)",
+              clipPath: "polygon(0 25%, 100% 0, 100% 75%, 0 100%)",
             }}
             aria-label="Volume"
           />
         </div>
 
-        <span className="text-[8px] text-muted-foreground tabular-nums w-7 text-right shrink-0 tracking-wider">
+        <span className="text-[7px] text-muted-foreground/50 tabular-nums w-6 text-right shrink-0 tracking-wider">
           {Math.round((muted ? 0 : volume) * 100)}%
         </span>
       </div>
 
-      {/* Bottom decorative */}
-      <div className="px-3 py-1 flex justify-between text-[6px] tracking-[0.2em] text-muted-foreground/20 uppercase border-t border-border/10">
-        <span>CODEC: MP3/MPEG</span>
+      {/* ── Bottom decorative ── */}
+      <div className="px-2 py-0.5 flex justify-between text-[5px] tracking-[0.2em] text-muted-foreground/15 uppercase border-t border-border/8">
+        <span>CODEC: MP3</span>
         <span>LATENCY: LOW</span>
-        <span>NODE: ACTIVE</span>
+        <span>CIPHER: AES-256</span>
       </div>
     </div>
   );
