@@ -62,7 +62,7 @@ const InfoWidgets = () => {
           <div className="px-2 py-1 border-b border-border bg-muted/80">
             <span className="text-[7px] font-display tracking-[0.2em] text-primary">IPS NA REDE</span>
           </div>
-          <div className="flex items-center gap-2 px-2 py-1.5">
+          <div className="flex items-center gap-2 px-2 py-1.5 justify-center h-full">
             <Network
               className="w-4 h-4 shrink-0 text-[hsl(50,100%,55%)]"
               style={{ "--glow": "hsl(50,100%,55%)", animation: "iconGlowIntense 2s ease-in-out 1.6s infinite" } as React.CSSProperties}

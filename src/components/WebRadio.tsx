@@ -192,8 +192,18 @@ const WebRadio = () => {
       if (ctx.state === "suspended") ctx.resume();
       const analyser = analyserRef.current;
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      // Dispatch playing state
+      window.dispatchEvent(new CustomEvent("radio-state", { detail: { playing: true } }));
       const tick = () => {
         analyser.getByteFrequencyData(dataArray);
+
+        // Calculate bass energy (first 4 bins = sub-bass + bass)
+        const bassEnd = Math.min(4, dataArray.length);
+        let bassSum = 0;
+        for (let b = 0; b < bassEnd; b++) bassSum += dataArray[b];
+        const bassEnergy = bassSum / (bassEnd * 255);
+        window.dispatchEvent(new CustomEvent("radio-energy", { detail: { energy: bassEnergy } }));
+
         for (let i = 0; i < BAR_COUNT; i++) {
           const bar = barsRef.current[i];
           if (!bar) continue;
@@ -218,6 +228,7 @@ const WebRadio = () => {
   }, []);
 
   const stopAnalyser = useCallback(() => {
+    window.dispatchEvent(new CustomEvent("radio-state", { detail: { playing: false } }));
     cancelAnimationFrame(frameRef.current);
     let decaying = true;
     const decay = () => {
