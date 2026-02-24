@@ -32,12 +32,13 @@ const Index = () => {
   const [files, setFiles] = useState<FsEntry[]>([]);
   const [totalSize, setTotalSize] = useState(0);
   const [rescanning, setRescanning] = useState(false);
-  const [fileViewerMaxH, setFileViewerMaxH] = useState<number | undefined>(undefined);
+  const [fileViewerH, setFileViewerH] = useState<number | undefined>(undefined);
   const [cameraMaxH, setCameraMaxH] = useState<number | undefined>(undefined);
   const webRadioRef = useRef<HTMLDivElement>(null);
   const fileViewerRef = useRef<HTMLDivElement>(null);
   const leftColRef = useRef<HTMLDivElement>(null);
   const cameraPanelRef = useRef<HTMLDivElement>(null);
+  const calcRef = useRef<HTMLDivElement>(null);
 
   const loadFiles = useCallback(async (folderName: string) => {
     try {
@@ -73,21 +74,14 @@ const Index = () => {
     setRescanning(false);
   }, [activeFolder, loadFiles]);
 
-  // Sync file viewer height with WebRadio bottom
+  // Align: file viewer bottom = calculator bottom; camera panel bottom = left column bottom
   useEffect(() => {
     const sync = () => {
-      if (webRadioRef.current && fileViewerRef.current) {
-        const radioBottom = webRadioRef.current.getBoundingClientRect().bottom;
+      if (calcRef.current && fileViewerRef.current) {
+        const calcBottom = calcRef.current.getBoundingClientRect().bottom;
         const viewerTop = fileViewerRef.current.getBoundingClientRect().top;
-        const maxH = radioBottom - viewerTop - 1;
-        if (maxH > 200) setFileViewerMaxH(maxH);
-      }
-      // Align camera panel bottom with left column bottom
-      if (leftColRef.current && cameraPanelRef.current) {
-        const leftBottom = leftColRef.current.getBoundingClientRect().bottom;
-        const camTop = cameraPanelRef.current.getBoundingClientRect().top;
-        const camH = leftBottom - camTop;
-        if (camH > 150) setCameraMaxH(camH);
+        const h = calcBottom - viewerTop;
+        if (h > 80) setFileViewerH(h);
       }
     };
     sync();
@@ -133,7 +127,7 @@ const Index = () => {
               </HudPanel>
             </motion.div>
 
-            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp}>
+            <motion.div ref={calcRef} custom={2} initial="hidden" animate="visible" variants={fadeUp}>
               <HudPanel title="Calculadora">
                 <Calculator />
               </HudPanel>
@@ -145,10 +139,12 @@ const Index = () => {
           </div>
 
           {/* Center Column - File Viewer + Camera */}
-          <div ref={fileViewerRef} className="lg:col-span-6 flex flex-col gap-3 min-h-0 overflow-hidden">
-            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
-              <HudPanel title="Lista de Arquivos" className="overflow-hidden flex flex-col">
-                <div className="overflow-y-auto min-h-0" style={{ maxHeight: 220 }}>
+          <div ref={fileViewerRef} className="lg:col-span-6 flex flex-col gap-3 min-h-0">
+            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0"
+              style={fileViewerH ? { maxHeight: fileViewerH } : undefined}
+            >
+              <HudPanel title="Lista de Arquivos" className="overflow-hidden flex flex-col h-full">
+                <div className="overflow-y-auto flex-1 min-h-0">
                   {activeFolder ? (
                     <FileViewer
                       folderName={activeFolder}
@@ -174,9 +170,7 @@ const Index = () => {
             </motion.div>
 
             {/* Security Camera Panel - fills remaining space */}
-            <motion.div ref={cameraPanelRef} custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0"
-              style={cameraMaxH ? { maxHeight: cameraMaxH } : undefined}
-            >
+            <motion.div ref={cameraPanelRef} custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0 overflow-hidden">
               <SecurityCameraPanel />
             </motion.div>
           </div>
