@@ -5,60 +5,39 @@ import { Volume2, VolumeX, Play, Pause } from "lucide-react";
 const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
 const BAR_COUNT = 24;
 
+// Simulated spectrum — generates organic-looking bar heights
+function generateBars(prev: number[], vol: number): number[] {
+  return prev.map((old, i) => {
+    const freq = i / BAR_COUNT;
+    // Bass-heavy curve: lower bars are taller
+    const base = (1 - freq * 0.6) * vol;
+    const rand = Math.random() * 0.5 + 0.5;
+    const target = base * rand * (0.6 + Math.sin(Date.now() / (300 + i * 40)) * 0.4);
+    // Smooth interpolation
+    return old * 0.3 + target * 0.7;
+  });
+}
+
 const WebRadio = () => {
   const [playing, setPlaying] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const ctxRef = useRef<AudioContext | null>(null);
-  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const frameRef = useRef(0);
   const [bars, setBars] = useState<number[]>(new Array(BAR_COUNT).fill(0));
 
-  // Analyser loop
-  const startAnalyser = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    try {
-      if (!ctxRef.current) ctxRef.current = new AudioContext();
-      const ctx = ctxRef.current;
-      if (!sourceRef.current) sourceRef.current = ctx.createMediaElementSource(audio);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.4;
-      sourceRef.current.connect(analyser);
-      analyser.connect(ctx.destination);
-      analyserRef.current = analyser;
+  // Simulated visualizer loop
+  const startVisualizer = useCallback(() => {
+    const tick = () => {
+      setBars(prev => generateBars(prev, volume));
+      frameRef.current = requestAnimationFrame(tick);
+    };
+    frameRef.current = requestAnimationFrame(tick);
+  }, [volume]);
 
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
-        analyser.getByteFrequencyData(data);
-        const result: number[] = [];
-        const bins = data.length;
-        for (let i = 0; i < BAR_COUNT; i++) {
-          const start = Math.floor((i / BAR_COUNT) * bins * 0.7);
-          const end = Math.max(Math.floor(((i + 1) / BAR_COUNT) * bins * 0.7), start + 1);
-          let sum = 0;
-          for (let b = start; b < end; b++) sum += data[b];
-          result.push(sum / ((end - start) * 255));
-        }
-        setBars(result);
-        frameRef.current = requestAnimationFrame(tick);
-      };
-      tick();
-    } catch (e) {
-      console.warn("AudioContext failed:", e);
-    }
-  }, []);
-
-  const stopAnalyser = useCallback(() => {
+  const stopVisualizer = useCallback(() => {
     cancelAnimationFrame(frameRef.current);
-    if (analyserRef.current) {
-      analyserRef.current.disconnect();
-      analyserRef.current = null;
-    }
     // Smooth decay
     const decay = () => {
       setBars(prev => {
@@ -75,9 +54,9 @@ const WebRadio = () => {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const onPlaying = () => { setConnecting(false); setPlaying(true); startAnalyser(); };
-    const onPause = () => { setPlaying(false); setConnecting(false); stopAnalyser(); };
-    const onError = () => { setConnecting(false); setPlaying(false); stopAnalyser(); };
+    const onPlaying = () => { setConnecting(false); setPlaying(true); startVisualizer(); };
+    const onPause = () => { setPlaying(false); setConnecting(false); stopVisualizer(); };
+    const onError = () => { setConnecting(false); setPlaying(false); stopVisualizer(); };
     audio.addEventListener("playing", onPlaying);
     audio.addEventListener("pause", onPause);
     audio.addEventListener("error", onError);
@@ -86,7 +65,7 @@ const WebRadio = () => {
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("error", onError);
     };
-  }, [startAnalyser, stopAnalyser]);
+  }, [startVisualizer, stopVisualizer]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
