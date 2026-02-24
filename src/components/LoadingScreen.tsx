@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import logoImage from "@/assets/logo-new.png";
 
 const LOADING_DURATION = 6000;
 
-// Holographic ring - centered on the circular part of the logo (upper ~45% of image)
+// Holographic ring - centered on the circular part of the logo
 const HoloRing = ({ radius, delay, color, reverse }: { radius: number; delay: number; color: string; reverse?: boolean }) => (
   <motion.circle
     cx="250"
@@ -38,6 +38,7 @@ const DigitalNoise = ({ active }: { active: boolean }) => {
     canvas.height = 300;
 
     let frame = 0;
+    let animId: number;
     const draw = () => {
       if (frame % 3 === 0) {
         ctx.clearRect(0, 0, 300, 300);
@@ -52,27 +53,215 @@ const DigitalNoise = ({ active }: { active: boolean }) => {
         }
       }
       frame++;
-      requestAnimationFrame(draw);
+      animId = requestAnimationFrame(draw);
     };
-    const id = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(id);
+    animId = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(animId);
   }, [active]);
 
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-40 pointer-events-none mix-blend-screen" />;
 };
 
+// Collapsing logo canvas — progressively disintegrates the logo into particles
+interface Particle {
+  x: number; y: number;
+  origX: number; origY: number;
+  vx: number; vy: number;
+  r: number; g: number; b: number; a: number;
+  size: number;
+  delay: number; // 0-1, when this particle starts moving
+  life: number;
+}
+
+const CollapsingLogo = ({ progress, size }: { progress: number; size: number }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const initializedRef = useRef(false);
+
+  // Load image and extract particles once
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      imageRef.current = img;
+      // Extract pixel data
+      const offscreen = document.createElement("canvas");
+      offscreen.width = size;
+      offscreen.height = size;
+      const octx = offscreen.getContext("2d")!;
+      octx.drawImage(img, 0, 0, size, size);
+      const data = octx.getImageData(0, 0, size, size).data;
+
+      const particles: Particle[] = [];
+      const step = 3; // sample every 3 pixels for performance
+      const cx = size / 2;
+      const cy = size / 2;
+      for (let y = 0; y < size; y += step) {
+        for (let x = 0; x < size; x += step) {
+          const i = (y * size + x) * 4;
+          const a = data[i + 3];
+          if (a < 30) continue; // skip transparent
+          const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2) / (size / 2);
+          const angle = Math.atan2(y - cy, x - cx);
+          // Particles fly outward in their angle + some randomness
+          const speed = 1.5 + Math.random() * 3;
+          particles.push({
+            x, y,
+            origX: x, origY: y,
+            vx: Math.cos(angle + (Math.random() - 0.5) * 0.8) * speed,
+            vy: Math.sin(angle + (Math.random() - 0.5) * 0.8) * speed - Math.random() * 1.5,
+            r: data[i], g: data[i + 1], b: data[i + 2], a: a / 255,
+            size: step * (0.8 + Math.random() * 0.6),
+            delay: dist * 0.4 + Math.random() * 0.3, // outer pixels collapse later
+            life: 0.5 + Math.random() * 0.5,
+          });
+        }
+      }
+      particlesRef.current = particles;
+      initializedRef.current = true;
+    };
+    img.src = logoImage;
+  }, [size]);
+
+  // Render loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    canvas.width = size;
+    canvas.height = size;
+
+    let animId: number;
+    const draw = () => {
+      ctx.clearRect(0, 0, size, size);
+
+      if (!initializedRef.current || !imageRef.current) {
+        // Just draw the image normally while loading particles
+        if (imageRef.current) {
+          ctx.drawImage(imageRef.current, 0, 0, size, size);
+        }
+        animId = requestAnimationFrame(draw);
+        return;
+      }
+
+      const collapseProgress = progress; // 0 to 1
+
+      // Phase: 0-0.3 = stable with glitches, 0.3-0.85 = progressive collapse, 0.85-1 = full dissolution
+      if (collapseProgress < 0.25) {
+        // Draw image normally with occasional glitch
+        ctx.drawImage(imageRef.current, 0, 0, size, size);
+
+        // Subtle glitch lines that increase with progress
+        const glitchIntensity = collapseProgress / 0.25;
+        const numGlitches = Math.floor(glitchIntensity * 4);
+        for (let i = 0; i < numGlitches; i++) {
+          const gy = Math.random() * size;
+          const gh = 1 + Math.random() * 3;
+          const shift = (Math.random() - 0.5) * glitchIntensity * 12;
+          ctx.drawImage(canvas, 0, gy, size, gh, shift, gy, size, gh);
+        }
+      } else {
+        // Progressive collapse — draw particles
+        const t = (collapseProgress - 0.25) / 0.75; // normalize 0-1 for collapse phase
+
+        // Still draw some of the original image, fading out
+        if (t < 0.6) {
+          ctx.globalAlpha = Math.max(0, 1 - t * 2);
+          ctx.drawImage(imageRef.current, 0, 0, size, size);
+          ctx.globalAlpha = 1;
+        }
+
+        // Draw particles
+        const particles = particlesRef.current;
+        let remnantCount = 0;
+        for (const p of particles) {
+          const particleT = Math.max(0, (t - p.delay) / (1 - p.delay));
+          if (particleT <= 0) {
+            // Not yet collapsing — draw in place
+            ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.a})`;
+            ctx.fillRect(p.origX, p.origY, p.size, p.size);
+            continue;
+          }
+
+          // Ease out
+          const ease = 1 - Math.pow(1 - particleT, 2);
+          const drift = ease * 40;
+          const px = p.origX + p.vx * drift;
+          const py = p.origY + p.vy * drift;
+          const alpha = Math.max(0, p.a * (1 - particleT));
+
+          if (alpha <= 0.01) continue;
+
+          // Glow effect for bright particles
+          const brightness = (p.r + p.g + p.b) / 3;
+          if (brightness > 100 && particleT > 0.3) {
+            const hue = p.r > p.b ? (p.g > p.r ? 50 : 320) : 190;
+            ctx.shadowColor = `hsl(${hue}, 100%, 60%)`;
+            ctx.shadowBlur = 4 + particleT * 6;
+          }
+
+          ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${alpha})`;
+          const shrink = p.size * (1 - particleT * 0.5);
+          ctx.fillRect(px, py, Math.max(0.5, shrink), Math.max(0.5, shrink));
+          ctx.shadowBlur = 0;
+
+          // Remnant trace — tiny glowing dots left behind
+          if (particleT > 0.7 && particleT < 0.95 && Math.random() < 0.04) {
+            remnantCount++;
+          }
+        }
+
+        // Draw remnant traces — small glowing dots in the void
+        if (t > 0.5) {
+          const remnantAlpha = Math.min(1, (t - 0.5) * 3) * Math.max(0, 1 - (t - 0.8) * 5);
+          if (remnantAlpha > 0) {
+            for (const p of particles) {
+              if (Math.random() > 0.008) continue;
+              const hue = [190, 320, 50][Math.floor(Math.random() * 3)];
+              ctx.fillStyle = `hsla(${hue}, 100%, 65%, ${remnantAlpha * (0.3 + Math.random() * 0.5)})`;
+              ctx.shadowColor = `hsl(${hue}, 100%, 60%)`;
+              ctx.shadowBlur = 3;
+              const rx = p.origX + (Math.random() - 0.5) * 20;
+              const ry = p.origY + (Math.random() - 0.5) * 20;
+              ctx.beginPath();
+              ctx.arc(rx, ry, 0.5 + Math.random() * 1.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+          }
+        }
+      }
+
+      animId = requestAnimationFrame(draw);
+    };
+    animId = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(animId);
+  }, [progress, size]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={size}
+      height={size}
+      className="w-full h-full"
+    />
+  );
+};
+
 const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<"boot" | "reveal" | "pulse" | "shatter" | "done">("boot");
-  const audioRef = useRef<HTMLAudioElement>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+
+  // Responsive logo size
+  const logoSize = typeof window !== "undefined" && window.innerWidth >= 768 ? 380 : 260;
 
   // Boot sound - synthesized
   useEffect(() => {
     try {
       const ac = new AudioContext();
-      // Power-on sweep
       const osc = ac.createOscillator();
       const gain = ac.createGain();
       osc.type = "sine";
@@ -87,7 +276,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
       osc.start();
       osc.stop(ac.currentTime + 1.5);
 
-      // Digital chirps
       setTimeout(() => {
         const osc2 = ac.createOscillator();
         const g2 = ac.createGain();
@@ -102,7 +290,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
         osc2.stop(ac.currentTime + 0.15);
       }, 600);
 
-      // Hum loop
       setTimeout(() => {
         const osc3 = ac.createOscillator();
         const g3 = ac.createGain();
@@ -119,11 +306,10 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     } catch {}
   }, []);
 
-  // Exit sound - electric zap + descending whoosh
+  // Exit sound
   const playExitSound = useCallback(() => {
     try {
       const ac = new AudioContext();
-      // Electric zap - short burst
       const osc1 = ac.createOscillator();
       const g1 = ac.createGain();
       osc1.type = "sawtooth";
@@ -135,7 +321,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
       osc1.start();
       osc1.stop(ac.currentTime + 0.7);
 
-      // Reverse reverb swoosh
       const bufLen = ac.sampleRate * 0.8;
       const buf = ac.createBuffer(2, bufLen, ac.sampleRate);
       for (let ch = 0; ch < 2; ch++) {
@@ -159,7 +344,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     } catch {}
   }, []);
 
-  // Progress sound - ascending digital hum that rises with progress
+  // Progress sound + timer
   useEffect(() => {
     let ac: AudioContext | null = null;
     let osc: OscillatorNode | null = null;
@@ -169,7 +354,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
 
     try {
       ac = new AudioContext();
-      // Continuous rising tone
       osc = ac.createOscillator();
       gain = ac.createGain();
       osc.type = "sine";
@@ -179,7 +363,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
       osc.connect(gain).connect(ac.destination);
       osc.start();
 
-      // Ticking/scanning pulse
       tickOsc = ac.createOscillator();
       tickGain = ac.createGain();
       tickOsc.type = "square";
@@ -198,7 +381,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
       const p = Math.min((Date.now() - start) / LOADING_DURATION, 1);
       setProgress(p);
 
-      // Update rising frequency based on progress
       if (osc && ac) {
         osc.frequency.setValueAtTime(100 + p * 400, ac.currentTime);
       }
@@ -209,34 +391,22 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
       if (p < 1) {
         requestAnimationFrame(tick);
       } else {
-        // Fade out progress sound
-        if (gain && ac) {
-          gain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.3);
-        }
-        if (tickGain && ac) {
-          tickGain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.2);
-        }
-        setTimeout(() => {
-          osc?.stop();
-          tickOsc?.stop();
-        }, 400);
+        if (gain && ac) gain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.3);
+        if (tickGain && ac) tickGain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.2);
+        setTimeout(() => { osc?.stop(); tickOsc?.stop(); }, 400);
 
         setPhase("shatter");
         playExitSound();
         setTimeout(() => {
           setPhase("done");
           setTimeout(() => onCompleteRef.current(), 400);
-        }, 1000);
+        }, 1200);
       }
     };
     requestAnimationFrame(tick);
 
     return () => {
-      try {
-        osc?.stop();
-        tickOsc?.stop();
-        ac?.close();
-      } catch {}
+      try { osc?.stop(); tickOsc?.stop(); ac?.close(); } catch {}
     };
   }, [playExitSound]);
 
@@ -252,12 +422,17 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     }
   }, [phase]);
 
-  // No canvas effect needed for new exit
-
   const isBoot = phase === "boot";
   const isReveal = phase === "reveal";
   const isPulse = phase === "pulse";
   const isShatter = phase === "shatter";
+
+  // Collapse progress: starts at ~30% loading, accelerates toward end
+  const collapseProgress = useMemo(() => {
+    if (progress < 0.3) return 0;
+    const t = (progress - 0.3) / 0.7;
+    return Math.pow(t, 1.3); // ease-in acceleration
+  }, [progress]);
 
   return (
     <AnimatePresence>
@@ -268,7 +443,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4 }}
         >
-
           {/* Radial glow behind logo */}
           <motion.div
             className="absolute z-0"
@@ -289,78 +463,60 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
             }
           />
 
-          {/* Holographic rings SVG - centered on circular part of logo */}
-          <svg className="absolute z-[1] w-[260px] h-[260px] md:w-[380px] md:h-[380px] pointer-events-none" viewBox="0 0 500 500"
+          {/* Holographic rings SVG */}
+          <motion.svg
+            className="absolute z-[1] w-[260px] h-[260px] md:w-[380px] md:h-[380px] pointer-events-none"
+            viewBox="0 0 500 500"
             style={{ marginTop: "-20px" }}
+            animate={isShatter ? { opacity: 0, scale: 1.3 } : { opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
           >
             <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
             <HoloRing radius={115} delay={0} color="hsl(190, 100%, 50%)" />
             <HoloRing radius={125} delay={0.4} color="hsl(320, 100%, 50%)" reverse />
             <HoloRing radius={135} delay={0.8} color="hsl(50, 100%, 50%)" />
-          </svg>
+          </motion.svg>
 
-          {/* Logo container */}
+          {/* Logo container — uses CollapsingLogo canvas */}
           <motion.div
-            className="relative z-10 w-[260px] h-[260px] md:w-[380px] md:h-[380px] overflow-hidden rounded-full"
+            className="relative z-10 w-[260px] h-[260px] md:w-[380px] md:h-[380px]"
             animate={
               isShatter
-                ? { scale: [1, 1.06, 0.9], opacity: [1, 0.7, 0], y: [0, -8, 20] }
+                ? { opacity: 0, scale: 0.85 }
                 : isBoot
                 ? { opacity: [0, 0.1, 0, 0.4, 0, 0.8, 0.5, 1], scale: [0.8, 0.85, 0.8, 0.9, 0.85, 1], rotate: [0, -1, 1, -0.5, 0] }
                 : isReveal
                 ? { opacity: 1, scale: 1, rotate: 0 }
-                : isPulse
-                ? { opacity: 1, scale: [1, 1.02, 1], rotate: 0 }
                 : { opacity: 1, scale: 1 }
             }
             transition={
               isShatter
-                ? { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
+                ? { duration: 1, ease: "easeOut" }
                 : isBoot
                 ? { duration: 1, ease: "easeInOut" }
-                : isPulse
-                ? { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.5 }
             }
           >
-            {/* Exit scan effect INSIDE the logo */}
-            {isShatter && (
-              <>
-                <motion.div
-                  className="absolute inset-0 z-30 pointer-events-none"
-                  style={{ background: "linear-gradient(180deg, transparent 0%, hsl(190 100% 60% / 0.2) 42%, hsl(190 100% 90% / 0.9) 49%, hsl(320 100% 70% / 0.7) 51%, hsl(190 100% 60% / 0.2) 58%, transparent 100%)" }}
-                  initial={{ y: "-100%" }}
-                  animate={{ y: "200%" }}
-                  transition={{ duration: 0.5, ease: "easeIn" }}
-                />
-                <motion.div
-                  className="absolute inset-0 z-25 pointer-events-none"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: [0, 0.5, 0.8, 0] }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  style={{ background: "radial-gradient(circle, hsl(190 100% 70% / 0.6), transparent 70%)" }}
-                />
-              </>
-            )}
             <DigitalNoise active={isBoot} />
 
-            <img
-              src={logoImage}
-              alt="IGOR FUNK SYSTEM"
-              className="w-full h-full object-contain relative z-10"
-              style={{
-                filter: isShatter
-                  ? "drop-shadow(0 0 80px hsl(190 100% 50%)) drop-shadow(0 0 120px hsl(320 100% 50%)) drop-shadow(0 0 40px hsl(50 100% 50%))"
-                  : isPulse
-                  ? "drop-shadow(0 0 25px hsl(190 100% 50% / 0.6)) drop-shadow(0 0 50px hsl(320 100% 50% / 0.4)) drop-shadow(0 0 15px hsl(50 100% 50% / 0.3))"
-                  : isBoot
-                  ? "drop-shadow(0 0 4px hsl(190 100% 50% / 0.2)) grayscale(0.5)"
-                  : "drop-shadow(0 0 15px hsl(190 100% 50% / 0.5)) drop-shadow(0 0 30px hsl(320 100% 50% / 0.3))",
-                transition: "filter 0.3s ease",
-              }}
-            />
+            {/* Collapsing logo canvas — replaces static img during pulse phase */}
+            {(isPulse || isShatter) ? (
+              <CollapsingLogo progress={collapseProgress} size={logoSize} />
+            ) : (
+              <img
+                src={logoImage}
+                alt="IGOR FUNK SYSTEM"
+                className="w-full h-full object-contain relative z-10"
+                style={{
+                  filter: isBoot
+                    ? "drop-shadow(0 0 4px hsl(190 100% 50% / 0.2)) grayscale(0.5)"
+                    : "drop-shadow(0 0 15px hsl(190 100% 50% / 0.5)) drop-shadow(0 0 30px hsl(320 100% 50% / 0.3))",
+                  transition: "filter 0.3s ease",
+                }}
+              />
+            )}
 
-            {/* Chromatic aberration layers during boot */}
+            {/* Chromatic aberration during boot */}
             {isBoot && (
               <>
                 <motion.img
@@ -398,6 +554,8 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
               animate={
                 isShatter
                   ? { opacity: 0, y: -30, scale: 1.3 }
+                  : collapseProgress > 0.5
+                  ? { opacity: Math.max(0, 1 - (collapseProgress - 0.5) * 2), y: 0, scale: 1 }
                   : isReveal || isPulse
                   ? { opacity: 1, y: 0, scale: 1 }
                   : { opacity: 0, y: 20 }
@@ -413,6 +571,8 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
               animate={
                 isShatter
                   ? { opacity: 0, y: -20 }
+                  : collapseProgress > 0.5
+                  ? { opacity: Math.max(0, 1 - (collapseProgress - 0.5) * 2), y: 0 }
                   : isReveal || isPulse
                   ? { opacity: 1, y: 0 }
                   : { opacity: 0, y: 10 }
@@ -442,7 +602,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
                   animate={{ backgroundPosition: ["0% 0%", "300% 0%"] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                 />
-                {/* Glow on progress tip */}
                 <div
                   className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full"
                   style={{
