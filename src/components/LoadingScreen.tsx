@@ -64,7 +64,6 @@ const DigitalNoise = ({ active }: { active: boolean }) => {
 const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<"boot" | "reveal" | "pulse" | "shatter" | "done">("boot");
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
@@ -120,40 +119,43 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     } catch {}
   }, []);
 
-  // Shatter explosion sound
-  const playShatterSound = useCallback(() => {
+  // Exit sound - electric zap + descending whoosh
+  const playExitSound = useCallback(() => {
     try {
       const ac = new AudioContext();
-      // Impact
-      const bufferSize = ac.sampleRate * 0.5;
-      const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ac.sampleRate * 0.08));
-      }
-      const noise = ac.createBufferSource();
-      noise.buffer = buffer;
-      const g = ac.createGain();
-      g.gain.setValueAtTime(0.25, ac.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.5);
-      const filter = ac.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(2000, ac.currentTime);
-      filter.frequency.exponentialRampToValueAtTime(200, ac.currentTime + 0.4);
-      noise.connect(filter).connect(g).connect(ac.destination);
-      noise.start();
+      // Electric zap - short burst
+      const osc1 = ac.createOscillator();
+      const g1 = ac.createGain();
+      osc1.type = "sawtooth";
+      osc1.frequency.setValueAtTime(3000, ac.currentTime);
+      osc1.frequency.exponentialRampToValueAtTime(80, ac.currentTime + 0.6);
+      g1.gain.setValueAtTime(0.15, ac.currentTime);
+      g1.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.7);
+      osc1.connect(g1).connect(ac.destination);
+      osc1.start();
+      osc1.stop(ac.currentTime + 0.7);
 
-      // Rising tone
-      const osc = ac.createOscillator();
-      const og = ac.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(200, ac.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(2000, ac.currentTime + 0.3);
-      og.gain.setValueAtTime(0.12, ac.currentTime);
-      og.gain.linearRampToValueAtTime(0, ac.currentTime + 0.4);
-      osc.connect(og).connect(ac.destination);
-      osc.start();
-      osc.stop(ac.currentTime + 0.4);
+      // Reverse reverb swoosh
+      const bufLen = ac.sampleRate * 0.8;
+      const buf = ac.createBuffer(2, bufLen, ac.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = buf.getChannelData(ch);
+        for (let i = 0; i < bufLen; i++) {
+          const t = i / bufLen;
+          d[i] = (Math.random() * 2 - 1) * t * t * 0.4;
+        }
+      }
+      const src = ac.createBufferSource();
+      src.buffer = buf;
+      const gn = ac.createGain();
+      gn.gain.setValueAtTime(0.2, ac.currentTime);
+      gn.gain.linearRampToValueAtTime(0, ac.currentTime + 0.8);
+      const bp = ac.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.setValueAtTime(1500, ac.currentTime);
+      bp.Q.setValueAtTime(2, ac.currentTime);
+      src.connect(bp).connect(gn).connect(ac.destination);
+      src.start();
     } catch {}
   }, []);
 
@@ -167,7 +169,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
         requestAnimationFrame(tick);
       } else {
         setPhase("shatter");
-        playShatterSound();
+        playExitSound();
         setTimeout(() => {
           setPhase("done");
           setTimeout(() => onCompleteRef.current(), 400);
@@ -175,7 +177,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
       }
     };
     requestAnimationFrame(tick);
-  }, [playShatterSound]);
+  }, [playExitSound]);
 
   // Phase transitions
   useEffect(() => {
@@ -189,103 +191,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     }
   }, [phase]);
 
-  // Exit effect: energy wave + dissolve
-  useEffect(() => {
-    if (phase !== "shatter") return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    let waveRadius = 0;
-    const maxRadius = Math.hypot(cx, cy) * 1.2;
-    const startTime = Date.now();
-
-    // Energy ring particles that ride the wave
-    interface WaveParticle {
-      angle: number;
-      offset: number;
-      size: number;
-      hue: number;
-      trail: number;
-    }
-    const waveParticles: WaveParticle[] = [];
-    for (let i = 0; i < 80; i++) {
-      waveParticles.push({
-        angle: Math.random() * Math.PI * 2,
-        offset: (Math.random() - 0.5) * 30,
-        size: 1 + Math.random() * 2.5,
-        hue: [190, 320, 50][Math.floor(Math.random() * 3)],
-        trail: 0.3 + Math.random() * 0.7,
-      });
-    }
-
-    const draw = () => {
-      const elapsed = (Date.now() - startTime) / 1000;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Expanding energy wave
-      waveRadius = elapsed * 800;
-      if (waveRadius > maxRadius) return;
-
-      const waveAlpha = Math.max(0, 1 - waveRadius / maxRadius);
-
-      // Outer glow ring
-      ctx.beginPath();
-      ctx.arc(cx, cy, waveRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = `hsla(190, 100%, 60%, ${waveAlpha * 0.6})`;
-      ctx.lineWidth = 3;
-      ctx.shadowColor = "hsl(190, 100%, 60%)";
-      ctx.shadowBlur = 20;
-      ctx.stroke();
-
-      // Inner magenta ring
-      ctx.beginPath();
-      ctx.arc(cx, cy, waveRadius * 0.95, 0, Math.PI * 2);
-      ctx.strokeStyle = `hsla(320, 100%, 55%, ${waveAlpha * 0.4})`;
-      ctx.lineWidth = 1.5;
-      ctx.shadowColor = "hsl(320, 100%, 55%)";
-      ctx.shadowBlur = 15;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-
-      // Particles riding the wave
-      for (const p of waveParticles) {
-        const r = waveRadius + p.offset;
-        if (r < 0) continue;
-        const x = cx + Math.cos(p.angle) * r;
-        const y = cy + Math.sin(p.angle) * r;
-        const alpha = waveAlpha * p.trail;
-        if (alpha <= 0) continue;
-
-        ctx.beginPath();
-        ctx.arc(x, y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue}, 100%, 65%, ${alpha})`;
-        ctx.shadowColor = `hsl(${p.hue}, 100%, 60%)`;
-        ctx.shadowBlur = 6;
-        ctx.fill();
-      }
-      ctx.shadowBlur = 0;
-
-      // Center dissolve - fading bright core
-      if (elapsed < 0.4) {
-        const coreAlpha = Math.max(0, 1 - elapsed / 0.4);
-        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 120);
-        grad.addColorStop(0, `hsla(190, 100%, 80%, ${coreAlpha * 0.8})`);
-        grad.addColorStop(0.3, `hsla(320, 100%, 60%, ${coreAlpha * 0.4})`);
-        grad.addColorStop(1, "transparent");
-        ctx.fillStyle = grad;
-        ctx.fillRect(cx - 120, cy - 120, 240, 240);
-      }
-
-      requestAnimationFrame(draw);
-    };
-    requestAnimationFrame(draw);
-  }, [phase]);
+  // No canvas effect needed for new exit
 
   const isBoot = phase === "boot";
   const isReveal = phase === "reveal";
@@ -301,18 +207,24 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4 }}
         >
-          {/* Shatter canvas */}
-          <canvas ref={canvasRef} className="absolute inset-0 z-40 pointer-events-none" />
-
-          {/* Shatter flash - subtle */}
+          {/* Exit: horizontal scan wipe */}
           {isShatter && (
-            <motion.div
-              className="absolute inset-0 z-30"
-              style={{ background: "white" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0.7, 0, 0.3, 0] }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            />
+            <>
+              <motion.div
+                className="absolute inset-0 z-30 pointer-events-none"
+                style={{ background: "linear-gradient(180deg, transparent 0%, hsl(190 100% 60% / 0.15) 45%, hsl(190 100% 80% / 0.6) 50%, hsl(190 100% 60% / 0.15) 55%, transparent 100%)" }}
+                initial={{ y: "0%" }}
+                animate={{ y: ["-100%", "200%"] }}
+                transition={{ duration: 0.6, ease: "easeIn" }}
+              />
+              <motion.div
+                className="absolute inset-0 z-35 pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 0.15, 0] }}
+                transition={{ duration: 0.3, delay: 0.15 }}
+                style={{ background: "hsl(190 100% 70%)" }}
+              />
+            </>
           )}
 
           {/* Radial glow behind logo */}
@@ -350,7 +262,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
             className="relative z-10 w-[260px] h-[260px] md:w-[380px] md:h-[380px]"
             animate={
               isShatter
-                ? { scale: 1.5, opacity: 0, filter: "brightness(5) blur(30px)", rotate: 15 }
+                ? { scale: [1, 1.08, 0.95], opacity: [1, 0.8, 0], y: [0, -10, 30] }
                 : isBoot
                 ? { opacity: [0, 0.1, 0, 0.4, 0, 0.8, 0.5, 1], scale: [0.8, 0.85, 0.8, 0.9, 0.85, 1], rotate: [0, -1, 1, -0.5, 0] }
                 : isReveal
@@ -361,7 +273,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
             }
             transition={
               isShatter
-                ? { duration: 0.6, ease: "easeIn" }
+                ? { duration: 0.7, ease: [0.22, 1, 0.36, 1] }
                 : isBoot
                 ? { duration: 1, ease: "easeInOut" }
                 : isPulse
