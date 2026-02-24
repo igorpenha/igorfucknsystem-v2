@@ -14,11 +14,10 @@ import SecurityCameraPanel from "@/components/SecurityCameraPanel";
 import FileMenu from "@/components/FileMenu";
 import FileViewer from "@/components/FileViewer";
 import SpaceBackground from "@/components/SpaceBackground";
-import ToolButton from "@/components/ToolButton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fetchFiles, type FsEntry } from "@/services/fileSystemApi";
 import { toast } from "sonner";
-import { CalculatorIcon, Wifi } from "lucide-react";
+import { CalculatorIcon, Wifi, ChevronRight } from "lucide-react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -103,8 +102,8 @@ const Index = () => {
         <main className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-3 relative z-10 flex-1 min-h-0 overflow-hidden">
           {/* Left Column - File Menu + Tool Buttons */}
           <div ref={leftColRef} className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
-            <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0 flex flex-col overflow-hidden">
-              <HudPanel title="Arquivos" className="flex-1 min-h-0 overflow-hidden flex flex-col h-[60vh] max-h-[60vh]">
+            <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
+              <HudPanel title="Pastas" className="overflow-hidden flex flex-col h-[50vh] max-h-[50vh]">
                 <div className="flex-1 min-h-0 overflow-y-auto hud-scroll">
                   <FileMenu
                     activeFolder={activeFolder}
@@ -116,24 +115,36 @@ const Index = () => {
               </HudPanel>
             </motion.div>
 
-            {/* Tool Corner */}
-            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0 flex gap-2">
-              <ToolButton
-                icon={<CalculatorIcon className="w-4 h-4" />}
-                label="CALCULADORA"
+            {/* Tool Corner — drawer-style buttons */}
+            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0 flex flex-col gap-1.5">
+              <button
                 onClick={() => setCalcOpen(true)}
-              />
-              <ToolButton
-                icon={<Wifi className="w-4 h-4" />}
-                label="IPS DA REDE"
+                className="hud-panel flex items-center gap-2.5 px-3 py-2 rounded-sm text-left transition-all duration-200 w-full
+                  hover:border-primary/20 hover:bg-primary/5 text-muted-foreground hover:text-foreground"
+              >
+                <div className="w-6 h-6 rounded-sm flex items-center justify-center border border-secondary/20 bg-secondary/5">
+                  <CalculatorIcon className="w-3.5 h-3.5 text-secondary/60" />
+                </div>
+                <span className="text-[10px] tracking-wider font-display flex-1">CALCULADORA</span>
+                <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
+              </button>
+              <button
                 onClick={() => setNetworkOpen(true)}
-              />
+                className="hud-panel flex items-center gap-2.5 px-3 py-2 rounded-sm text-left transition-all duration-200 w-full
+                  hover:border-primary/20 hover:bg-primary/5 text-muted-foreground hover:text-foreground"
+              >
+                <div className="w-6 h-6 rounded-sm flex items-center justify-center border border-secondary/20 bg-secondary/5">
+                  <Wifi className="w-3.5 h-3.5 text-secondary/60" />
+                </div>
+                <span className="text-[10px] tracking-wider font-display flex-1">IPS DA REDE</span>
+                <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
+              </button>
             </motion.div>
           </div>
 
           {/* Center Column - File Viewer + Camera */}
           <div className="lg:col-span-6 flex flex-col gap-3 min-h-0">
-            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0 h-[60vh] max-h-[60vh]">
+            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0 h-[50vh] max-h-[50vh]">
               <HudPanel title="Lista de Arquivos" className="overflow-hidden flex flex-col h-full">
                 <div className="overflow-y-auto flex-1 min-h-0 hud-scroll">
                   {activeFolder ? (
@@ -161,7 +172,7 @@ const Index = () => {
             </motion.div>
 
             {/* Security Camera Panel - fills remaining space */}
-            <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0 overflow-hidden">
+            <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-[350px] overflow-hidden">
               <SecurityCameraPanel />
             </motion.div>
           </div>
