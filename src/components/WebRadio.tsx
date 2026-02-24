@@ -186,11 +186,11 @@ const WebRadio = () => {
       {/* === ALBUM ART — large, centered, with SVG rings === */}
       <div className="flex flex-col items-center pt-3 pb-1 px-2">
         <div className="relative">
-          <AlbumArtRings playing={playing} energy={energy} size={110} />
+          <AlbumArtRings playing={playing} energy={energy} size={150} />
           {/* Album art inside the rings */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div
-              className="w-[70px] h-[70px] rounded-full overflow-hidden border border-border/40"
+              className="w-[100px] h-[100px] rounded-full overflow-hidden border border-border/40"
               style={{
                 boxShadow: playing
                   ? "0 0 20px hsl(190 100% 50% / 0.3), 0 0 40px hsl(190 100% 50% / 0.1)"
