@@ -24,7 +24,7 @@ const SpaceBackground = () => {
 
     interface Star {
       x: number; y: number; z: number;
-      size: number; opacity: number; isMagenta: boolean;
+      size: number; opacity: number;
     }
     const stars: Star[] = [];
 
@@ -42,7 +42,6 @@ const SpaceBackground = () => {
         z: Math.random() * 1000,
         size: Math.random() * 2 + 0.5,
         opacity: Math.random() * 0.7 + 0.3,
-        isMagenta: Math.random() > 0.55,
       });
     }
 
@@ -58,11 +57,9 @@ const SpaceBackground = () => {
     window.addEventListener("radio-energy", onRadioEnergy);
 
     const draw = () => {
-      // Smooth bass for reactive bursts
       smoothBass += (bassEnergy - smoothBass) * 0.35;
 
       if (radioPlaying) {
-        // Bass-driven speed: base playing speed + explosive bass kicks
         const basePlaying = 2.5;
         const bassBoost = Math.pow(smoothBass, 0.7) * (MAX_SPEED - basePlaying);
         targetSpeed = basePlaying + bassBoost;
@@ -86,7 +83,6 @@ const SpaceBackground = () => {
           star.z = 1000;
           star.x = (Math.random() - 0.5) * w * 2.5;
           star.y = (Math.random() - 0.5) * h * 2.5;
-          star.isMagenta = Math.random() > 0.55;
         }
 
         const sx = (star.x / star.z) * 400 + cx;
@@ -95,52 +91,62 @@ const SpaceBackground = () => {
         const r = depth * star.size * 2.8;
         const a = depth * star.opacity;
 
-        const hue = star.isMagenta ? 320 : 190;
-
         if (streakMode) {
           const trailLength = 4 + speedRatio * 30;
-          const trailSteps = speedRatio > 0.5 ? 10 : speedRatio > 0.2 ? 6 : 3;
+          const trailSteps = speedRatio > 0.5 ? 12 : speedRatio > 0.2 ? 7 : 4;
 
+          // Tapered comet tail — thins and fades from head to tip
           for (let t = trailSteps; t >= 1; t--) {
+            const progress = t / (trailSteps + 1); // 1 = far tip, 0 = head
             const tZ = star.z + currentSpeed * 2 * trailLength * (t / trailSteps);
             if (tZ > 1000) continue;
             const tsx = (star.x / tZ) * 400 + cx;
             const tsy = (star.y / tZ) * 400 + cy;
-            const ta = a * (0.35 * (1 - t / (trailSteps + 1)));
-            const tw = Math.max(r * (2 - t / trailSteps), 0.3);
+
+            // Next segment closer to head
+            const nextT = t - 1;
+            const nextZ = nextT === 0
+              ? star.z
+              : star.z + currentSpeed * 2 * trailLength * (nextT / trailSteps);
+            const nsx = (star.x / nextZ) * 400 + cx;
+            const nsy = (star.y / nextZ) * 400 + cy;
+
+            // Fade and thin towards tip
+            const segAlpha = a * 0.4 * (1 - progress);
+            const segWidth = Math.max(r * (2.5 - progress * 2.2) * (1 + speedRatio), 0.2);
 
             ctx.beginPath();
             ctx.moveTo(tsx, tsy);
-            ctx.lineTo(sx, sy);
-            ctx.strokeStyle = `hsla(${hue}, 100%, 70%, ${ta})`;
-            ctx.lineWidth = tw;
+            ctx.lineTo(nsx, nsy);
+            ctx.strokeStyle = `rgba(210, 215, 225, ${segAlpha})`;
+            ctx.lineWidth = segWidth;
             ctx.stroke();
           }
 
-          // Core streak
+          // Core streak — bright white head line
           const prevZ = star.z + currentSpeed * 2;
           const psx = (star.x / prevZ) * 400 + cx;
           const psy = (star.y / prevZ) * 400 + cy;
           ctx.beginPath();
           ctx.moveTo(psx, psy);
           ctx.lineTo(sx, sy);
-          ctx.strokeStyle = `hsla(${hue}, 100%, 88%, ${a * (0.9 + speedRatio * 0.1)})`;
+          ctx.strokeStyle = `rgba(240, 242, 248, ${a * (0.9 + speedRatio * 0.1)})`;
           ctx.lineWidth = Math.max(r * (1.5 + speedRatio * 3), 0.8);
           ctx.stroke();
         }
 
-        // Star dot
+        // Star dot — white/matte head
         ctx.beginPath();
         ctx.arc(sx, sy, Math.max(r, 0.5), 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${hue}, 100%, 82%, ${a})`;
+        ctx.fillStyle = `rgba(235, 238, 245, ${a})`;
         ctx.fill();
 
-        // Glow halo
+        // Glow halo — soft white
         if (r > 0.8) {
           const glowSize = r * (3.5 + speedRatio * 5);
           ctx.beginPath();
           ctx.arc(sx, sy, glowSize, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${a * (0.15 + speedRatio * 0.2)})`;
+          ctx.fillStyle = `rgba(220, 225, 235, ${a * (0.1 + speedRatio * 0.15)})`;
           ctx.fill();
         }
       }
