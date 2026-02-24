@@ -1,12 +1,83 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, VolumeX, Play, Pause } from "lucide-react";
 import { FILE_API_BASE_URL } from "@/config/api";
 
 const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
 const METADATA_URL = `${FILE_API_BASE_URL}/api/radio/now-playing`;
 const METADATA_INTERVAL = 10_000;
 const BAR_COUNT = 32;
+
+/* ── Mini Audio Bars (CSS-only animated SVG) ── */
+const MiniAudioBars = ({ active }: { active: boolean }) => (
+  <svg width="16" height="24" viewBox="0 0 16 24" className="shrink-0">
+    {[0, 1, 2, 3].map(i => (
+      <rect
+        key={i}
+        x={i * 4}
+        y={active ? 4 : 18}
+        width="2.5"
+        height={active ? 20 : 6}
+        rx="1"
+        fill="hsl(var(--primary))"
+        opacity={active ? 0.8 : 0.2}
+        style={{
+          animation: active ? `miniBar ${0.4 + i * 0.15}s ease-in-out infinite alternate` : "none",
+        }}
+      />
+    ))}
+    <style>{`
+      @keyframes miniBar {
+        0% { y: 16; height: 8; }
+        100% { y: 4; height: 20; }
+      }
+    `}</style>
+  </svg>
+);
+
+/* ── Animated Play/Pause SVG ── */
+const PlayPauseIcon = ({ playing, connecting }: { playing: boolean; connecting: boolean }) => {
+  if (connecting) {
+    return (
+      <motion.svg width="18" height="18" viewBox="0 0 18 18" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}>
+        <circle cx="9" cy="9" r="7" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeDasharray="12 30" strokeLinecap="round" />
+      </motion.svg>
+    );
+  }
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18">
+      <AnimatePresence mode="wait">
+        {playing ? (
+          <motion.g key="pause" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.6 }} transition={{ duration: 0.15 }}>
+            <rect x="4" y="3" width="3.5" height="12" rx="1" fill="hsl(var(--primary))" />
+            <rect x="10.5" y="3" width="3.5" height="12" rx="1" fill="hsl(var(--primary))" />
+          </motion.g>
+        ) : (
+          <motion.g key="play" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.6 }} transition={{ duration: 0.15 }}>
+            <path d="M5 3.5 L15 9 L5 14.5Z" fill="hsl(var(--primary))" />
+          </motion.g>
+        )}
+      </AnimatePresence>
+    </svg>
+  );
+};
+
+/* ── Animated Volume SVG ── */
+const VolumeIcon = ({ muted }: { muted: boolean }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--accent))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 5 L6 9 H2 V15 H6 L11 19Z" fill="hsl(var(--accent)/0.15)" />
+    {muted ? (
+      <motion.g key="muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <line x1="23" y1="9" x2="17" y2="15" stroke="hsl(var(--destructive, 0 84% 60%))" />
+        <line x1="17" y1="9" x2="23" y2="15" stroke="hsl(var(--destructive, 0 84% 60%))" />
+      </motion.g>
+    ) : (
+      <motion.g key="unmuted" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.path d="M15.5 8.5 A4 4 0 0 1 15.5 15.5" animate={{ pathLength: [0, 1] }} transition={{ duration: 0.3 }} />
+        <motion.path d="M19 6 A8 8 0 0 1 19 18" opacity={0.5} animate={{ pathLength: [0, 1] }} transition={{ duration: 0.4, delay: 0.1 }} />
+      </motion.g>
+    )}
+  </svg>
+);
 
 const WebRadio = () => {
   const [playing, setPlaying] = useState(false);
@@ -32,7 +103,6 @@ const WebRadio = () => {
   useEffect(() => {
     if (!playing) return;
     let active = true;
-
     const fetchMeta = async () => {
       try {
         const res = await fetch(METADATA_URL);
@@ -59,24 +129,19 @@ const WebRadio = () => {
         }
       }
     };
-
     fetchMeta();
     const id = setInterval(fetchMeta, METADATA_INTERVAL);
     return () => { active = false; clearInterval(id); };
   }, [playing]);
 
-  // ── Real Web Audio API analyser (refined) ──
+  // ── Web Audio API analyser ──
   const startAnalyser = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
     try {
-      if (!ctxRef.current) {
-        ctxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
+      if (!ctxRef.current) ctxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       const ctx = ctxRef.current;
-      if (!sourceRef.current) {
-        sourceRef.current = ctx.createMediaElementSource(audio);
-      }
+      if (!sourceRef.current) sourceRef.current = ctx.createMediaElementSource(audio);
       if (!analyserRef.current) {
         const analyser = ctx.createAnalyser();
         analyser.fftSize = 64;
@@ -86,25 +151,19 @@ const WebRadio = () => {
         analyserRef.current = analyser;
       }
       if (ctx.state === "suspended") ctx.resume();
-
       const analyser = analyserRef.current;
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
       const tick = () => {
         analyser.getByteFrequencyData(dataArray);
         for (let i = 0; i < BAR_COUNT; i++) {
           const bar = barsRef.current[i];
           if (!bar) continue;
-
-          // Natural spectrum: bass stays dominant, gentle high-freq lift only
           const highLift = 1 + (i / BAR_COUNT) * 0.35;
           const raw = Math.min((dataArray[i] / 255) * highLift, 1);
           const val = Math.pow(raw, 0.85);
-
-          const h = Math.max(val * 80, 1.5); // cap at 80% height
+          const h = Math.max(val * 80, 1.5);
           const hue = 185 + (i / BAR_COUNT) * 135;
           const glow = val * val;
-
           bar.style.height = `${h}%`;
           bar.style.background = `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.08), hsla(${hue}, 100%, 55%, ${0.3 + val * 0.7}))`;
           bar.style.boxShadow = val > 0.2
@@ -144,21 +203,13 @@ const WebRadio = () => {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const onPlaying = () => {
-      setConnecting(false);
-      setPlaying(true);
-      startAnalyser();
-    };
+    const onPlaying = () => { setConnecting(false); setPlaying(true); startAnalyser(); };
     const onPause = () => { setPlaying(false); setConnecting(false); stopAnalyser(); };
     const onError = () => { setConnecting(false); setPlaying(false); stopAnalyser(); };
     audio.addEventListener("playing", onPlaying);
     audio.addEventListener("pause", onPause);
     audio.addEventListener("error", onError);
-    return () => {
-      audio.removeEventListener("playing", onPlaying);
-      audio.removeEventListener("pause", onPause);
-      audio.removeEventListener("error", onError);
-    };
+    return () => { audio.removeEventListener("playing", onPlaying); audio.removeEventListener("pause", onPause); audio.removeEventListener("error", onError); };
   }, [startAnalyser, stopAnalyser]);
 
   const togglePlay = useCallback(() => {
@@ -172,10 +223,7 @@ const WebRadio = () => {
     audio.volume = muted ? 0 : volume;
     audio.muted = muted;
     audio.load();
-    audio.play().catch(() => {
-      setConnecting(false);
-      setTrack(t => ({ ...t, title: "Erro de conexão" }));
-    });
+    audio.play().catch(() => { setConnecting(false); setTrack(t => ({ ...t, title: "Erro de conexão" })); });
   }, [playing, connecting, muted, volume]);
 
   const toggleMute = useCallback(() => {
@@ -196,98 +244,80 @@ const WebRadio = () => {
     <div className="flex flex-col h-full font-mono select-none overflow-hidden relative">
       <audio ref={audioRef} playsInline crossOrigin="anonymous" />
 
-      {/* ── Top decorative ── */}
-      <div className="px-2 pt-1.5 pb-1 flex items-center justify-between text-[6px] tracking-[0.3em] uppercase text-muted-foreground/30">
-        <span>SYS.NODE // 8050</span>
-        <span className="text-primary/40">STREAM_ENCRYPTED</span>
-        <span>BPM: SYNCING</span>
-      </div>
+      {/* ══════════ TOPO: Controles ══════════ */}
+      <div className="px-2 pt-2 pb-1.5 flex items-center gap-2 border-b border-border/15">
+        {/* Play/Pause */}
+        <button
+          onClick={togglePlay}
+          className="relative w-10 h-10 shrink-0 border border-primary/40 bg-primary/8 hover:bg-primary/18 transition-all flex items-center justify-center"
+          style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
+          aria-label={playing ? "Pausar" : "Play"}
+        >
+          <PlayPauseIcon playing={playing} connecting={connecting} />
+          {playing && (
+            <motion.div
+              className="absolute inset-0 border border-primary/20"
+              style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
+              animate={{ opacity: [0.4, 0, 0.4] }}
+              transition={{ duration: 1.8, repeat: Infinity }}
+            />
+          )}
+        </button>
 
-      {/* ── Title ── */}
-      <div className="text-center px-2 pb-1">
-        <h2 className="text-[11px] font-display tracking-[0.35em] uppercase leading-none">
-          <span className="text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]">IGOR </span>
-          <span className="text-accent drop-shadow-[0_0_6px_hsl(var(--accent)/0.5)]">FUCKN </span>
-          <span className="text-neon-green drop-shadow-[0_0_6px_hsl(var(--neon-green)/0.5)]">STATION</span>
-        </h2>
-      </div>
+        {/* Mute */}
+        <button
+          onClick={toggleMute}
+          className="w-8 h-8 shrink-0 border border-accent/25 bg-accent/5 hover:bg-accent/12 transition-all flex items-center justify-center"
+          style={{ clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}
+          aria-label="Mute"
+        >
+          <VolumeIcon muted={muted} />
+        </button>
 
-      {/* ── LIVE Badge ── */}
-      <div className="flex justify-center pb-1.5">
+        {/* Volume slider */}
+        <div className="flex-1 relative flex items-center">
+          <input
+            type="range" min={0} max={1} step={0.01}
+            value={muted ? 0 : volume}
+            onChange={handleVolume}
+            className="w-full h-1.5 appearance-none cursor-pointer"
+            style={{
+              background: `linear-gradient(to right, hsl(var(--primary)) ${(muted ? 0 : volume) * 100}%, hsl(var(--muted)) ${(muted ? 0 : volume) * 100}%)`,
+              clipPath: "polygon(0 25%, 100% 0, 100% 75%, 0 100%)",
+            }}
+            aria-label="Volume"
+          />
+        </div>
+        <span className="text-[7px] text-muted-foreground/50 tabular-nums w-6 text-right shrink-0 tracking-wider">
+          {Math.round((muted ? 0 : volume) * 100)}%
+        </span>
+
+        {/* Live badge */}
         <AnimatePresence mode="wait">
           {playing ? (
-            <motion.div
-              key="live"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="flex items-center gap-1.5 px-2.5 py-0.5 border border-red-500/40 bg-red-500/10"
+            <motion.div key="live" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="flex items-center gap-1 px-2 py-0.5 border border-red-500/40 bg-red-500/10"
               style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
             >
-              <motion.div
-                className="w-1.5 h-1.5 rounded-full bg-red-500"
-                animate={{ opacity: [1, 0.2, 1] }}
-                transition={{ duration: 1, repeat: Infinity }}
-              />
-              <span className="text-[7px] tracking-[0.3em] text-red-400 font-display">ON AIR</span>
+              <motion.div className="w-1.5 h-1.5 rounded-full bg-red-500" animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1, repeat: Infinity }} />
+              <span className="text-[7px] tracking-[0.3em] text-red-400 font-display">LIVE</span>
             </motion.div>
           ) : (
-            <motion.div
-              key="offline"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center gap-1.5 px-2.5 py-0.5 border border-muted-foreground/15 bg-muted/5"
+            <motion.div key="off" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="flex items-center gap-1 px-2 py-0.5 border border-muted-foreground/15 bg-muted/5"
               style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
             >
               <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/25" />
               <span className="text-[7px] tracking-[0.3em] text-muted-foreground/40 font-display">
-                {connecting ? "LINKING..." : "OFFLINE"}
+                {connecting ? "LINK..." : "OFF"}
               </span>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* ── Album Art + Metadata ── */}
-      <div className="px-2 pb-1.5 flex items-center gap-2.5">
-        <div
-          className="w-14 h-14 shrink-0 border overflow-hidden flex items-center justify-center"
-          style={{
-            borderColor: playing ? "hsl(var(--primary))" : "hsl(var(--border))",
-            boxShadow: playing ? "0 0 12px hsl(var(--primary) / 0.25), inset 0 0 8px hsl(var(--primary) / 0.1)" : "none",
-            background: "hsl(var(--muted) / 0.15)",
-            clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)",
-            transition: "border-color 0.3s, box-shadow 0.3s",
-          }}
-        >
-          {track.cover && !coverError ? (
-            <img
-              src={track.cover}
-              alt="Album cover"
-              className="w-full h-full object-cover"
-              onError={() => setCoverError(true)}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-0.5">
-              <div className="w-5 h-5 border border-primary/20 flex items-center justify-center" style={{ clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}>
-                <span className="text-[8px] text-primary/30">♫</span>
-              </div>
-              <span className="text-[5px] text-muted-foreground/20 tracking-widest">NO DATA</span>
-            </div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0 space-y-0.5">
-          <p className="text-[10px] text-foreground font-display tracking-wider truncate leading-tight drop-shadow-[0_0_4px_hsl(var(--primary)/0.3)]">
-            {track.title}
-          </p>
-          <p className="text-[8px] text-accent/70 truncate leading-tight tracking-wider">{track.artist}</p>
-          <p className="text-[7px] text-muted-foreground/40 truncate leading-tight tracking-widest uppercase">{track.album}</p>
-        </div>
-      </div>
-
-      {/* ── Real Spectrum Visualizer (Web Audio API — 32 bars from AnalyserNode) ── */}
-      <div className="px-2 flex-1 min-h-0 flex items-end justify-center gap-[1.5px] pb-1">
+      {/* ══════════ MEIO: Visualizador de Espectro ══════════ */}
+      <div className="px-2 flex-1 min-h-0 flex items-end justify-center gap-[1.5px] py-2">
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
           const hue = 185 + (i / BAR_COUNT) * 135;
           return (
@@ -306,70 +336,63 @@ const WebRadio = () => {
         })}
       </div>
 
-      {/* ── Signal line ── */}
+      {/* ── Linha divisória ── */}
       <div className="mx-2 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
 
-      {/* ── Status ── */}
-      <div className="px-2 py-0.5 flex justify-between text-[6px] tracking-[0.15em] text-muted-foreground/25 uppercase">
-        <span>SIGNAL: {playing ? "OPTIMAL" : "STANDBY"}</span>
-        <span>NODE: {playing ? "ACTV" : "IDLE"}</span>
-        <span>FREQ: 8050Hz</span>
-      </div>
-
-      {/* ── Controls ── */}
-      <div className="px-2 py-1.5 flex items-center gap-1.5 border-t border-border/15">
-        <button
-          onClick={togglePlay}
-          className="relative w-9 h-9 shrink-0 border border-primary/40 bg-primary/8 hover:bg-primary/18 transition-all flex items-center justify-center"
-          style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
-          aria-label={playing ? "Pausar" : "Play"}
+      {/* ══════════ BASE: Capa + Metadados ══════════ */}
+      <div className="px-2 pt-2 pb-1.5 flex flex-col items-center gap-2">
+        {/* Album Art (destaque maior) */}
+        <div
+          className="w-28 h-28 shrink-0 border overflow-hidden flex items-center justify-center"
+          style={{
+            borderColor: playing ? "hsl(var(--primary))" : "hsl(var(--border))",
+            boxShadow: playing
+              ? "0 0 20px hsl(var(--primary) / 0.3), 0 0 40px hsl(var(--primary) / 0.1), inset 0 0 12px hsl(var(--primary) / 0.1)"
+              : "none",
+            background: "hsl(var(--muted) / 0.15)",
+            clipPath: "polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%)",
+            transition: "border-color 0.3s, box-shadow 0.3s",
+          }}
         >
-          {connecting ? (
-            <motion.div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
-          ) : playing ? (
-            <Pause className="w-3.5 h-3.5 text-primary" />
-          ) : (
-            <Play className="w-3.5 h-3.5 text-primary ml-0.5" />
-          )}
-          {playing && (
-            <motion.div
-              className="absolute inset-0 border border-primary/20"
-              style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
-              animate={{ opacity: [0.4, 0, 0.4] }}
-              transition={{ duration: 1.8, repeat: Infinity }}
+          {track.cover && !coverError ? (
+            <img
+              src={track.cover}
+              alt="Album cover"
+              className="w-full h-full object-cover"
+              onError={() => setCoverError(true)}
             />
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-1">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="opacity-20">
+                <circle cx="12" cy="12" r="10" stroke="hsl(var(--primary))" strokeWidth="1" />
+                <circle cx="12" cy="12" r="3" stroke="hsl(var(--primary))" strokeWidth="1" />
+                <line x1="12" y1="2" x2="12" y2="9" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.5" />
+                <line x1="12" y1="15" x2="12" y2="22" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.5" />
+              </svg>
+              <span className="text-[6px] text-muted-foreground/20 tracking-[0.3em]">NO SIGNAL</span>
+            </div>
           )}
-        </button>
-
-        <button
-          onClick={toggleMute}
-          className="w-7 h-7 shrink-0 border border-accent/25 bg-accent/5 hover:bg-accent/12 transition-all flex items-center justify-center"
-          style={{ clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}
-          aria-label="Mute"
-        >
-          {muted ? <VolumeX className="w-3 h-3 text-accent/50" /> : <Volume2 className="w-3 h-3 text-accent/80" />}
-        </button>
-
-        <div className="flex-1 relative flex items-center">
-          <input
-            type="range" min={0} max={1} step={0.01}
-            value={muted ? 0 : volume}
-            onChange={handleVolume}
-            className="w-full h-1.5 appearance-none cursor-pointer"
-            style={{
-              background: `linear-gradient(to right, hsl(var(--primary)) ${(muted ? 0 : volume) * 100}%, hsl(var(--muted)) ${(muted ? 0 : volume) * 100}%)`,
-              clipPath: "polygon(0 25%, 100% 0, 100% 75%, 0 100%)",
-            }}
-            aria-label="Volume"
-          />
         </div>
 
-        <span className="text-[7px] text-muted-foreground/50 tabular-nums w-6 text-right shrink-0 tracking-wider">
-          {Math.round((muted ? 0 : volume) * 100)}%
-        </span>
+        {/* Metadata + Mini visualizer */}
+        <div className="flex items-center gap-2 w-full max-w-[220px]">
+          <MiniAudioBars active={playing} />
+          <div className="flex-1 min-w-0 space-y-0.5 text-center">
+            <p className="text-[11px] text-foreground font-display tracking-wider truncate leading-tight drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]">
+              {track.title}
+            </p>
+            <p className="text-[8px] text-muted-foreground/50 truncate leading-tight tracking-widest uppercase">
+              {track.album}
+            </p>
+            <p className="text-[9px] text-accent/70 truncate leading-tight tracking-wider">
+              {track.artist}
+            </p>
+          </div>
+          <MiniAudioBars active={playing} />
+        </div>
       </div>
 
-      {/* ── Bottom ── */}
+      {/* ── Bottom decorative ── */}
       <div className="px-2 py-0.5 flex justify-between text-[5px] tracking-[0.2em] text-muted-foreground/15 uppercase border-t border-border/8">
         <span>CODEC: MP3</span>
         <span>LATENCY: LOW</span>
