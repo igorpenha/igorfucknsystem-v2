@@ -14,8 +14,11 @@ import SecurityCameraPanel from "@/components/SecurityCameraPanel";
 import FileMenu from "@/components/FileMenu";
 import FileViewer from "@/components/FileViewer";
 import SpaceBackground from "@/components/SpaceBackground";
+import ToolButton from "@/components/ToolButton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fetchFiles, type FsEntry } from "@/services/fileSystemApi";
 import { toast } from "sonner";
+import { CalculatorIcon, Wifi } from "lucide-react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -32,13 +35,10 @@ const Index = () => {
   const [files, setFiles] = useState<FsEntry[]>([]);
   const [totalSize, setTotalSize] = useState(0);
   const [rescanning, setRescanning] = useState(false);
-  const [fileViewerH, setFileViewerH] = useState<number | undefined>(undefined);
-  const [cameraMaxH, setCameraMaxH] = useState<number | undefined>(undefined);
+  const [calcOpen, setCalcOpen] = useState(false);
+  const [networkOpen, setNetworkOpen] = useState(false);
   const webRadioRef = useRef<HTMLDivElement>(null);
-  const fileViewerRef = useRef<HTMLDivElement>(null);
   const leftColRef = useRef<HTMLDivElement>(null);
-  const cameraPanelRef = useRef<HTMLDivElement>(null);
-  const calcRef = useRef<HTMLDivElement>(null);
 
   const loadFiles = useCallback(async (folderName: string) => {
     try {
@@ -74,31 +74,7 @@ const Index = () => {
     setRescanning(false);
   }, [activeFolder, loadFiles]);
 
-  // Align: file viewer bottom = calculator bottom; camera panel max height = remaining space
-  useEffect(() => {
-    const sync = () => {
-      if (calcRef.current && fileViewerRef.current) {
-        const calcRect = calcRef.current.getBoundingClientRect();
-        const viewerTop = fileViewerRef.current.getBoundingClientRect().top;
-        // Align file viewer bottom with top of last button row (~20% from calc bottom)
-        const lastRowOffset = calcRect.height * 0.2;
-        const h = calcRect.bottom - viewerTop - lastRowOffset;
-        if (h > 80) setFileViewerH(h);
-      }
-      // Camera panel: align bottom with left column bottom
-      if (leftColRef.current && cameraPanelRef.current) {
-        const leftBottom = leftColRef.current.getBoundingClientRect().bottom;
-        const camTop = cameraPanelRef.current.getBoundingClientRect().top;
-        const camH = leftBottom - camTop;
-        if (camH > 100) setCameraMaxH(camH);
-      }
-    };
-    sync();
-    window.addEventListener("resize", sync);
-    const timer = setTimeout(sync, 500);
-    const timer2 = setTimeout(sync, 1000);
-    return () => { window.removeEventListener("resize", sync); clearTimeout(timer); clearTimeout(timer2); };
-  }, []);
+  // No height sync needed - fixed heights via CSS
 
   return (
     <>
@@ -125,11 +101,11 @@ const Index = () => {
 
         {/* Main Content */}
         <main className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-3 relative z-10 flex-1 min-h-0 overflow-hidden">
-          {/* Left Column - File Menu */}
+          {/* Left Column - File Menu + Tool Buttons */}
           <div ref={leftColRef} className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
             <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0 flex flex-col overflow-hidden">
-              <HudPanel title="Arquivos" className="flex-1 min-h-0 overflow-hidden flex flex-col">
-                <div className="flex-1 min-h-0 overflow-y-auto">
+              <HudPanel title="Arquivos" className="flex-1 min-h-0 overflow-hidden flex flex-col h-[60vh] max-h-[60vh]">
+                <div className="flex-1 min-h-0 overflow-y-auto hud-scroll">
                   <FileMenu
                     activeFolder={activeFolder}
                     onSelectFolder={handleSelectFolder}
@@ -140,24 +116,26 @@ const Index = () => {
               </HudPanel>
             </motion.div>
 
-            <motion.div ref={calcRef} custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
-              <HudPanel title="Calculadora">
-                <Calculator />
-              </HudPanel>
-            </motion.div>
-
-            <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
-              <NetworkDeviceMonitor />
+            {/* Tool Corner */}
+            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0 flex gap-2">
+              <ToolButton
+                icon={<CalculatorIcon className="w-4 h-4" />}
+                label="CALCULADORA"
+                onClick={() => setCalcOpen(true)}
+              />
+              <ToolButton
+                icon={<Wifi className="w-4 h-4" />}
+                label="IPS DA REDE"
+                onClick={() => setNetworkOpen(true)}
+              />
             </motion.div>
           </div>
 
           {/* Center Column - File Viewer + Camera */}
-          <div ref={fileViewerRef} className="lg:col-span-6 flex flex-col gap-3 min-h-0">
-            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0"
-              style={fileViewerH ? { height: fileViewerH } : undefined}
-            >
+          <div className="lg:col-span-6 flex flex-col gap-3 min-h-0">
+            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0 h-[60vh] max-h-[60vh]">
               <HudPanel title="Lista de Arquivos" className="overflow-hidden flex flex-col h-full">
-                <div className="overflow-y-auto flex-1 min-h-0">
+                <div className="overflow-y-auto flex-1 min-h-0 hud-scroll">
                   {activeFolder ? (
                     <FileViewer
                       folderName={activeFolder}
@@ -183,9 +161,7 @@ const Index = () => {
             </motion.div>
 
             {/* Security Camera Panel - fills remaining space */}
-            <motion.div ref={cameraPanelRef} custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0 overflow-hidden"
-              style={cameraMaxH ? { height: cameraMaxH } : undefined}
-            >
+            <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0 overflow-hidden">
               <SecurityCameraPanel />
             </motion.div>
           </div>
@@ -203,9 +179,32 @@ const Index = () => {
                 <InfoWidgets />
               </HudPanel>
             </motion.div>
-
           </div>
         </main>
+
+        {/* Calculator Modal */}
+        <Dialog open={calcOpen} onOpenChange={setCalcOpen}>
+          <DialogContent className="hud-panel border-primary/30 max-w-sm bg-background/95 backdrop-blur-xl">
+            <DialogHeader>
+              <DialogTitle className="font-display text-xs tracking-[0.25em] text-foreground text-glow uppercase">
+                Calculadora
+              </DialogTitle>
+            </DialogHeader>
+            <Calculator />
+          </DialogContent>
+        </Dialog>
+
+        {/* Network IPs Modal */}
+        <Dialog open={networkOpen} onOpenChange={setNetworkOpen}>
+          <DialogContent className="hud-panel border-primary/30 max-w-md bg-background/95 backdrop-blur-xl">
+            <DialogHeader>
+              <DialogTitle className="font-display text-xs tracking-[0.25em] text-foreground text-glow uppercase">
+                IPs da Rede
+              </DialogTitle>
+            </DialogHeader>
+            <NetworkDeviceMonitor asContent />
+          </DialogContent>
+        </Dialog>
 
         {/* Footer */}
         <footer className="border-t border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">

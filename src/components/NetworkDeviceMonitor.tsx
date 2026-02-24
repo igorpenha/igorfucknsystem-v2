@@ -10,7 +10,7 @@ interface NetworkDevice {
 
 const BACKEND_URL = "http://localhost:4000/api/network";
 
-const NetworkDeviceMonitor = () => {
+const NetworkDeviceMonitor = ({ asContent = false }: { asContent?: boolean }) => {
   const [devices, setDevices] = useState<NetworkDevice[]>([]);
   const [online, setOnline] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -35,8 +35,8 @@ const NetworkDeviceMonitor = () => {
     return () => clearInterval(interval);
   }, []);
 
-  return (
-    <HudPanel title="Dispositivos na Rede">
+  const content = (
+    <>
       <div className="flex justify-end -mt-2 mb-2">
         <span className={`text-[8px] tracking-wider ${online ? "text-neon-green" : "text-destructive"}`}>
           {scanning ? "ESCANEANDO..." : online ? `${devices.length} ATIVOS` : "OFFLINE"}
@@ -58,7 +58,7 @@ const NetworkDeviceMonitor = () => {
             NENHUM DISPOSITIVO DETECTADO
           </p>
         ) : (
-          <div className="space-y-1 max-h-32 overflow-y-auto">
+          <div className="space-y-1 max-h-60 overflow-y-auto">
             {devices.map((d) => (
               <div
                 key={d.ip}
@@ -72,6 +72,14 @@ const NetworkDeviceMonitor = () => {
           </div>
         )}
       </div>
+    </>
+  );
+
+  if (asContent) return content;
+
+  return (
+    <HudPanel title="IPs da Rede">
+      {content}
     </HudPanel>
   );
 };
