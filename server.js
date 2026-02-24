@@ -138,19 +138,29 @@ const RADIO_DATA_DIR = "D:\\IGORFUCKNSYSTEM\\RADIODATA";
 app.get("/api/radio/now-playing", async (_req, res) => {
   try {
     const filePath = path.join(RADIO_DATA_DIR, "nowplaying.txt");
-    const text = await fs.readFile(filePath, "utf8");
+    const text = (await fs.readFile(filePath, "utf8")).trim();
+
+    let title = text || "Nenhuma música tocando";
+    let artist = "";
+
+    if (text && text.includes(" - ")) {
+      const parts = text.split(" - ");
+      artist = parts[0];
+      title = parts.slice(1).join(" - ");
+    }
+
     res.json({
-      title: text.trim() || "Nenhuma música tocando",
-      artist: "",
+      title,
+      artist,
       album: "TRANSMISSÃO AO VIVO",
-      coverUrl: "http://localhost:4000/api/radio/artwork",
+      coverUrl: `http://localhost:4000/api/radio/artwork?t=${Date.now()}`,
     });
   } catch {
     res.json({
       title: "Nenhuma música tocando",
       artist: "",
       album: "TRANSMISSÃO AO VIVO",
-      coverUrl: "http://localhost:4000/api/radio/artwork",
+      coverUrl: `http://localhost:4000/api/radio/artwork?t=${Date.now()}`,
     });
   }
 });
@@ -158,11 +168,16 @@ app.get("/api/radio/now-playing", async (_req, res) => {
 // ── GET /api/radio/artwork ───────────────────────────────
 
 app.get("/api/radio/artwork", (_req, res) => {
-  const artPath = path.join(RADIO_DATA_DIR, "artwork.png");
-  if (!fsSync.existsSync(artPath)) {
-    return res.status(404).json({ error: "Artwork not found" });
+  const pngPath = path.join(RADIO_DATA_DIR, "artwork.png");
+  const jpgPath = path.join(RADIO_DATA_DIR, "artwork.jpg");
+
+  if (fsSync.existsSync(pngPath)) {
+    return res.sendFile(pngPath);
   }
-  res.sendFile(artPath);
+  if (fsSync.existsSync(jpgPath)) {
+    return res.sendFile(jpgPath);
+  }
+  return res.status(404).json({ error: "Artwork not found" });
 });
 
 // ── Start ────────────────────────────────────────────────
