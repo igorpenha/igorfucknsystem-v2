@@ -12,8 +12,113 @@ export interface TrackInfo {
   timestamp: number;
 }
 
-const STREAM_URL = "https://stream.zeno.fm/yn65fsaurfhvv";
+const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
 const METADATA_INTERVAL = 10000;
+
+// Metadata fetcher with 3 fallback sources
+async function fetchAlbumArt(artist: string, title: string): Promise<string> {
+  const query = `${artist} ${title}`.trim();
+  if (!query) return "";
+
+  // Source 1: iTunes Search API
+  try {
+    const res = await fetch(
+      `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=1`,
+      { signal: AbortSignal.timeout(4000) }
+    );
+    const data = await res.json();
+    if (data.results?.[0]?.artworkUrl100) {
+      return data.results[0].artworkUrl100.replace("100x100", "600x600");
+    }
+  } catch {}
+
+  // Source 2: Deezer API (via CORS proxy or direct)
+  try {
+    const res = await fetch(
+      `https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=1&output=json`,
+      { signal: AbortSignal.timeout(4000) }
+    );
+    const data = await res.json();
+    if (data.data?.[0]?.album?.cover_big) {
+      return data.data[0].album.cover_big;
+    }
+  } catch {}
+
+  // Source 3: MusicBrainz + Cover Art Archive
+  try {
+    const res = await fetch(
+      `https://musicbrainz.org/ws/2/recording/?query=${encodeURIComponent(query)}&limit=1&fmt=json`,
+      { signal: AbortSignal.timeout(5000), headers: { "User-Agent": "IgorFunkSystem/1.0" } }
+    );
+    const data = await res.json();
+    const releaseId = data.recordings?.[0]?.releases?.[0]?.id;
+    if (releaseId) {
+      const coverRes = await fetch(
+        `https://coverartarchive.org/release/${releaseId}`,
+        { signal: AbortSignal.timeout(4000) }
+      );
+      const coverData = await coverRes.json();
+      if (coverData.images?.[0]?.thumbnails?.large) {
+        return coverData.images[0].thumbnails.large;
+      }
+      if (coverData.images?.[0]?.image) {
+        return coverData.images[0].image;
+      }
+    }
+  } catch {}
+
+  return "";
+}
+
+// Fetch stream metadata from Icecast/Shoutcast status
+async function fetchStreamMetadata(): Promise<{ title: string; artist: string } | null> {
+  // Source 1: Try Icecast JSON status
+  try {
+    const res = await fetch(`https://stream.igorfucknsystem.com.br/status-json.xsl`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = await res.json();
+    const source = data?.icestats?.source;
+    const src = Array.isArray(source) ? source[0] : source;
+    if (src?.title) {
+      const parts = src.title.split(" - ");
+      return { artist: parts[0]?.trim() || "", title: parts.slice(1).join(" - ").trim() || src.title };
+    }
+  } catch {}
+
+  // Source 2: Try 7.html (Shoutcast v1 style)
+  try {
+    const res = await fetch(`https://stream.igorfucknsystem.com.br/7.html`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    const text = await res.text();
+    // Format: <body>X,X,X,X,X,X,current title</body>
+    const match = text.match(/<body>(.*?)<\/body>/i);
+    if (match) {
+      const fields = match[1].split(",");
+      const songTitle = fields.slice(6).join(",").trim();
+      if (songTitle) {
+        const parts = songTitle.split(" - ");
+        return { artist: parts[0]?.trim() || "", title: parts.slice(1).join(" - ").trim() || songTitle };
+      }
+    }
+  } catch {}
+
+  // Source 3: Try stats endpoint
+  try {
+    const res = await fetch(`https://stream.igorfucknsystem.com.br/stats?json=1`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    const data = await res.json();
+    const title = data?.songtitle || data?.title || "";
+    if (title) {
+      const parts = title.split(" - ");
+      return { artist: parts[0]?.trim() || "", title: parts.slice(1).join(" - ").trim() || title };
+    }
+  } catch {}
+
+  return null;
+}
 
 const WebRadio = () => {
   const [playing, setPlaying] = useState(false);
@@ -28,37 +133,19 @@ const WebRadio = () => {
   const animFrameRef = useRef<number>(0);
 
   const fetchMetadata = useCallback(async () => {
-    try {
-      // Try fetching from stream info
-      const res = await fetch(`https://api.zeno.fm/mounts/metadata/subscribe/yn65fsaurfhvv`, {
-        signal: AbortSignal.timeout(5000),
+    const result = await fetchStreamMetadata();
+    if (!result) return;
+
+    const { title, artist } = result;
+    if (title !== metadata.title || artist !== metadata.artist) {
+      // Fetch album art with fallback chain
+      const albumArt = await fetchAlbumArt(artist, title);
+      setMetadata({ title, artist, albumArt });
+      setHistory((prev) => {
+        const newTrack: TrackInfo = { title, artist, albumArt, timestamp: Date.now() };
+        return [newTrack, ...prev].slice(0, 3);
       });
-      const data = await res.json();
-      if (data?.streamTitle) {
-        const parts = data.streamTitle.split(" - ");
-        const artist = parts[0]?.trim() || "";
-        const title = parts[1]?.trim() || data.streamTitle;
-
-        // Search album art from iTunes
-        let albumArt = "";
-        try {
-          const searchQuery = encodeURIComponent(`${artist} ${title}`);
-          const itunesRes = await fetch(`https://itunes.apple.com/search?term=${searchQuery}&media=music&limit=1`);
-          const itunesData = await itunesRes.json();
-          if (itunesData.results?.[0]?.artworkUrl100) {
-            albumArt = itunesData.results[0].artworkUrl100.replace("100x100", "600x600");
-          }
-        } catch {}
-
-        if (title !== metadata.title || artist !== metadata.artist) {
-          setMetadata({ title, artist, albumArt });
-          setHistory((prev) => {
-            const newTrack: TrackInfo = { title, artist, albumArt, timestamp: Date.now() };
-            return [newTrack, ...prev].slice(0, 3);
-          });
-        }
-      }
-    } catch {}
+    }
   }, [metadata.title, metadata.artist]);
 
   useEffect(() => {
@@ -87,7 +174,6 @@ const WebRadio = () => {
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
     const tick = () => {
       analyser.getByteFrequencyData(dataArray);
-      // Calculate energy from low frequencies
       let sum = 0;
       for (let i = 0; i < 20; i++) sum += dataArray[i];
       setEnergy(sum / (20 * 255));
@@ -138,7 +224,7 @@ const WebRadio = () => {
           {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
         </button>
         <span className="text-[10px] font-display tracking-[0.2em] text-primary">
-          IGORP-PUNK-STATION
+          IGOR·FUNK·STATION
         </span>
         <span className={`text-[9px] tracking-wider ${playing ? "text-neon-green" : "text-muted-foreground"}`}>
           {playing ? "NO AR" : "OFFLINE"}
@@ -165,7 +251,6 @@ const WebRadio = () => {
               animation: "artist-glow-pulse 3s ease-in-out infinite",
             } : { color: "hsl(190 30% 50%)" }}
           >
-            {/* Blinking dashes */}
             {playing && (
               <svg className="inline-block w-2 h-2 mr-1 animate-pulse-glow" viewBox="0 0 8 2">
                 <rect width="8" height="2" fill="hsl(190,100%,50%)" rx="1" />

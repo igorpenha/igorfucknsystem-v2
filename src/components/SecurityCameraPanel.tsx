@@ -138,9 +138,9 @@ const SecurityCameraPanel = () => {
   }, [isAutoRotating, loadStream, stopRotationTimer]);
 
   return (
-    <div className="hud-panel rounded-sm p-4 scanlines h-full flex flex-col">
+    <div className="hud-panel rounded-sm p-4 scanlines flex flex-col" style={{ height: "100%" }}>
       {/* Title bar */}
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
+      <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border shrink-0">
         <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow" />
         <h3 className="font-display text-xs uppercase tracking-[0.25em] text-foreground text-glow">
           Sistema de Monitoramento
@@ -153,16 +153,16 @@ const SecurityCameraPanel = () => {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 flex-1">
-        {/* LEFT: Control Panel */}
+      <div className="flex flex-col lg:flex-row gap-3 flex-1 min-h-0">
+        {/* LEFT: Control Panel — scrollable camera buttons */}
         <div className="lg:w-[35%] flex flex-col min-h-0">
           <div className="border border-border/50 rounded-sm p-1.5 flex-1 min-h-0 overflow-hidden">
-            <div className="overflow-y-auto h-full max-h-[350px] pr-1 space-y-1 custom-scrollbar">
+            <div className="overflow-y-auto h-full pr-1 space-y-1 custom-scrollbar">
               {CAMERAS.map((cam, i) => (
                 <button
                   key={i}
                   onClick={() => handleCameraClick(i)}
-                  className={`w-full py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 ${
+                  className={`w-full py-1.5 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 ${
                     activeCamera === i
                       ? "bg-primary/20 border-primary text-primary shadow-[0_0_12px_hsl(190,100%,50%/0.3)] ring-1 ring-primary/50"
                       : "bg-muted/30 border-border text-muted-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
@@ -189,7 +189,7 @@ const SecurityCameraPanel = () => {
         </div>
 
         {/* RIGHT: Video Display */}
-        <div className="lg:w-[65%] relative">
+        <div className="lg:w-[65%] relative flex flex-col min-h-0">
           {/* Neon border frame */}
           <div className="absolute inset-0 rounded-sm pointer-events-none z-10">
             <div className="absolute inset-0 rounded-sm border border-primary/30" />
@@ -221,7 +221,7 @@ const SecurityCameraPanel = () => {
           </div>
 
           {/* Video container */}
-          <div className="relative bg-muted/20 rounded-sm overflow-hidden crt-filter" style={{ aspectRatio: "16/9" }}>
+          <div className="relative bg-muted/20 rounded-sm overflow-hidden crt-filter flex-1 min-h-0" style={{ aspectRatio: "16/9" }}>
             {/* Grid overlay */}
             <div
               className="absolute inset-0 pointer-events-none opacity-10 z-[5]"
@@ -309,7 +309,7 @@ const SecurityCameraPanel = () => {
 
           {/* Camera label */}
           {activeCamera !== null && (
-            <div className="mt-1 flex items-center justify-between px-1">
+            <div className="mt-1 flex items-center justify-between px-1 shrink-0">
               <span className="text-[9px] text-muted-foreground tracking-widest">
                 CAM-{String(activeCamera + 1).padStart(2, "0")}
               </span>
@@ -322,28 +322,28 @@ const SecurityCameraPanel = () => {
       </div>
 
       {/* Bottom controls */}
-      <div className="flex gap-3 mt-3 pt-3 border-t border-border">
+      <div className="flex gap-3 mt-2 pt-2 border-t border-border shrink-0">
         <button
           onClick={handleStopAll}
           disabled={activeCamera === null && !isAutoRotating}
-          className="flex-1 py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 bg-[hsl(0,70%,40%/0.3)] border-[hsl(0,70%,50%/0.6)] text-[hsl(0,85%,65%)] hover:bg-[hsl(0,70%,40%/0.5)] hover:shadow-[0_0_12px_hsl(0,80%,55%/0.4)] disabled:cursor-not-allowed disabled:hover:shadow-none disabled:opacity-40"
+          className="flex-1 py-1.5 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 bg-[hsl(0,70%,40%/0.3)] border-[hsl(0,70%,50%/0.6)] text-[hsl(0,85%,65%)] hover:bg-[hsl(0,70%,40%/0.5)] hover:shadow-[0_0_12px_hsl(0,80%,55%/0.4)] disabled:cursor-not-allowed disabled:hover:shadow-none disabled:opacity-40"
         >
           ■ Parar Tudo
         </button>
         <button
           onClick={handleAutoRotation}
-          className={`flex-1 py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 ${
+          className={`flex-1 py-1.5 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 ${
             isAutoRotating
               ? "bg-accent/20 border-accent text-accent shadow-[0_0_12px_hsl(300,80%,55%/0.3)] animate-pulse-glow"
               : "bg-primary/10 border-primary/40 text-primary hover:bg-primary/20 hover:shadow-[0_0_12px_hsl(190,100%,50%/0.3)]"
           }`}
         >
-          {isAutoRotating ? "⟳ Rotação Auto LIGADA" : "⟳ Rotação Auto"}
+          {isAutoRotating ? "⟳ Auto LIGADA" : "⟳ Rotação Auto"}
         </button>
         <button
-          className="flex-1 py-2 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 bg-secondary/10 border-secondary/40 text-secondary hover:bg-secondary/20 hover:shadow-[0_0_12px_hsl(var(--secondary)/0.3)]"
+          className="flex-1 py-1.5 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 bg-secondary/10 border-secondary/40 text-secondary hover:bg-secondary/20 hover:shadow-[0_0_12px_hsl(var(--secondary)/0.3)]"
         >
-          ⊞ Acessar Grid
+          ⊞ Grid
         </button>
       </div>
     </div>
