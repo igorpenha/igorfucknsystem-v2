@@ -1,8 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Volume2, VolumeX } from "lucide-react";
-import VinylDisc from "./radio/VinylDisc";
-import CyberPlayButton from "./radio/CyberPlayButton";
-import TrackHistory from "./radio/TrackHistory";
+import { Volume2, VolumeX, Play, Pause, Radio, Music2 } from "lucide-react";
 import AudioVisualizer from "./radio/AudioVisualizer";
 
 export interface TrackInfo {
@@ -15,12 +12,9 @@ export interface TrackInfo {
 const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
 const METADATA_INTERVAL = 10000;
 
-// Metadata fetcher with 3 fallback sources
 async function fetchAlbumArt(artist: string, title: string): Promise<string> {
   const query = `${artist} ${title}`.trim();
   if (!query) return "";
-
-  // Source 1: iTunes Search API
   try {
     const res = await fetch(
       `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=1`,
@@ -31,48 +25,18 @@ async function fetchAlbumArt(artist: string, title: string): Promise<string> {
       return data.results[0].artworkUrl100.replace("100x100", "600x600");
     }
   } catch {}
-
-  // Source 2: Deezer API (via CORS proxy or direct)
   try {
     const res = await fetch(
       `https://api.deezer.com/search?q=${encodeURIComponent(query)}&limit=1&output=json`,
       { signal: AbortSignal.timeout(4000) }
     );
     const data = await res.json();
-    if (data.data?.[0]?.album?.cover_big) {
-      return data.data[0].album.cover_big;
-    }
+    if (data.data?.[0]?.album?.cover_big) return data.data[0].album.cover_big;
   } catch {}
-
-  // Source 3: MusicBrainz + Cover Art Archive
-  try {
-    const res = await fetch(
-      `https://musicbrainz.org/ws/2/recording/?query=${encodeURIComponent(query)}&limit=1&fmt=json`,
-      { signal: AbortSignal.timeout(5000), headers: { "User-Agent": "IgorFunkSystem/1.0" } }
-    );
-    const data = await res.json();
-    const releaseId = data.recordings?.[0]?.releases?.[0]?.id;
-    if (releaseId) {
-      const coverRes = await fetch(
-        `https://coverartarchive.org/release/${releaseId}`,
-        { signal: AbortSignal.timeout(4000) }
-      );
-      const coverData = await coverRes.json();
-      if (coverData.images?.[0]?.thumbnails?.large) {
-        return coverData.images[0].thumbnails.large;
-      }
-      if (coverData.images?.[0]?.image) {
-        return coverData.images[0].image;
-      }
-    }
-  } catch {}
-
   return "";
 }
 
-// Fetch stream metadata from Icecast/Shoutcast status
 async function fetchStreamMetadata(): Promise<{ title: string; artist: string } | null> {
-  // Source 1: Try Icecast JSON status
   try {
     const res = await fetch(`https://stream.igorfucknsystem.com.br/status-json.xsl`, {
       signal: AbortSignal.timeout(5000),
@@ -85,26 +49,6 @@ async function fetchStreamMetadata(): Promise<{ title: string; artist: string } 
       return { artist: parts[0]?.trim() || "", title: parts.slice(1).join(" - ").trim() || src.title };
     }
   } catch {}
-
-  // Source 2: Try 7.html (Shoutcast v1 style)
-  try {
-    const res = await fetch(`https://stream.igorfucknsystem.com.br/7.html`, {
-      signal: AbortSignal.timeout(4000),
-    });
-    const text = await res.text();
-    // Format: <body>X,X,X,X,X,X,current title</body>
-    const match = text.match(/<body>(.*?)<\/body>/i);
-    if (match) {
-      const fields = match[1].split(",");
-      const songTitle = fields.slice(6).join(",").trim();
-      if (songTitle) {
-        const parts = songTitle.split(" - ");
-        return { artist: parts[0]?.trim() || "", title: parts.slice(1).join(" - ").trim() || songTitle };
-      }
-    }
-  } catch {}
-
-  // Source 3: Try stats endpoint
   try {
     const res = await fetch(`https://stream.igorfucknsystem.com.br/stats?json=1`, {
       signal: AbortSignal.timeout(4000),
@@ -116,7 +60,6 @@ async function fetchStreamMetadata(): Promise<{ title: string; artist: string } 
       return { artist: parts[0]?.trim() || "", title: parts.slice(1).join(" - ").trim() || title };
     }
   } catch {}
-
   return null;
 }
 
@@ -124,6 +67,7 @@ const WebRadio = () => {
   const [playing, setPlaying] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(0.8);
   const [metadata, setMetadata] = useState({ title: "Aguardando sinal...", artist: "", albumArt: "" });
   const [history, setHistory] = useState<TrackInfo[]>([]);
   const [energy, setEnergy] = useState(0);
@@ -133,46 +77,39 @@ const WebRadio = () => {
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const animFrameRef = useRef<number>(0);
 
-  const fetchMetadata = useCallback(async () => {
+  const fetchMeta = useCallback(async () => {
     const result = await fetchStreamMetadata();
     if (!result) return;
-
     const { title, artist } = result;
     if (title !== metadata.title || artist !== metadata.artist) {
-      // Fetch album art with fallback chain
       const albumArt = await fetchAlbumArt(artist, title);
       setMetadata({ title, artist, albumArt });
       setHistory((prev) => {
         const newTrack: TrackInfo = { title, artist, albumArt, timestamp: Date.now() };
-        return [newTrack, ...prev].slice(0, 3);
+        return [newTrack, ...prev].slice(0, 5);
       });
     }
   }, [metadata.title, metadata.artist]);
 
   useEffect(() => {
     if (!playing) return;
-    fetchMetadata();
-    const interval = setInterval(fetchMetadata, METADATA_INTERVAL);
+    fetchMeta();
+    const interval = setInterval(fetchMeta, METADATA_INTERVAL);
     return () => clearInterval(interval);
-  }, [playing, fetchMetadata]);
+  }, [playing, fetchMeta]);
 
   const startAnalyser = useCallback(() => {
     if (!audioRef.current) return;
     try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext();
-      }
+      if (!audioContextRef.current) audioContextRef.current = new AudioContext();
       const ctx = audioContextRef.current;
-      if (!sourceRef.current) {
-        sourceRef.current = ctx.createMediaElementSource(audioRef.current);
-      }
+      if (!sourceRef.current) sourceRef.current = ctx.createMediaElementSource(audioRef.current);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.4;
+      analyser.smoothingTimeConstant = 0.3;
       sourceRef.current.connect(analyser);
       analyser.connect(ctx.destination);
       analyserRef.current = analyser;
-
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       const tick = () => {
         analyser.getByteFrequencyData(dataArray);
@@ -183,166 +120,174 @@ const WebRadio = () => {
       };
       tick();
     } catch (e) {
-      console.warn("AudioContext analyser failed (CORS), skipping visualizer:", e);
+      console.warn("AudioContext failed:", e);
     }
   }, []);
 
   const stopAnalyser = useCallback(() => {
     cancelAnimationFrame(animFrameRef.current);
-    if (analyserRef.current) {
-      analyserRef.current.disconnect();
-      analyserRef.current = null;
-    }
+    if (analyserRef.current) { analyserRef.current.disconnect(); analyserRef.current = null; }
     setEnergy(0);
   }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    const onPlaying = () => {
-      setConnecting(false);
-      setPlaying(true);
-      fetchMetadata();
-      startAnalyser();
-    };
-    const onPause = () => {
-      setPlaying(false);
-      setConnecting(false);
-      stopAnalyser();
-    };
-    const onError = () => {
-      setConnecting(false);
-      setPlaying(false);
-      setMetadata((prev) => ({ ...prev, title: "Erro ao reproduzir", artist: "Verifique a conexão" }));
-      stopAnalyser();
-    };
-
+    const onPlaying = () => { setConnecting(false); setPlaying(true); fetchMeta(); startAnalyser(); };
+    const onPause = () => { setPlaying(false); setConnecting(false); stopAnalyser(); };
+    const onError = () => { setConnecting(false); setPlaying(false); setMetadata(p => ({ ...p, title: "Erro de conexão", artist: "Tente novamente" })); stopAnalyser(); };
     audio.addEventListener("playing", onPlaying);
     audio.addEventListener("pause", onPause);
     audio.addEventListener("error", onError);
     audio.addEventListener("stalled", onError);
-
-    return () => {
-      audio.removeEventListener("playing", onPlaying);
-      audio.removeEventListener("pause", onPause);
-      audio.removeEventListener("error", onError);
-      audio.removeEventListener("stalled", onError);
-    };
-  }, [fetchMetadata, startAnalyser, stopAnalyser]);
+    return () => { audio.removeEventListener("playing", onPlaying); audio.removeEventListener("pause", onPause); audio.removeEventListener("error", onError); audio.removeEventListener("stalled", onError); };
+  }, [fetchMeta, startAnalyser, stopAnalyser]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    if (playing || connecting) {
-      audio.pause();
-      return;
-    }
-
+    if (playing || connecting) { audio.pause(); return; }
     setConnecting(true);
-    setMetadata((prev) => ({ ...prev, title: "Conectando...", artist: "" }));
-
-    // Cache-bust helps some Icecast proxies/browsers
+    setMetadata(p => ({ ...p, title: "Conectando...", artist: "" }));
     audio.src = `${STREAM_URL}?t=${Date.now()}`;
     audio.preload = "none";
-    audio.volume = muted ? 0 : 1;
+    audio.volume = muted ? 0 : volume;
     audio.muted = muted;
-
     audio.load();
-    audio.play().catch((err) => {
-      console.error("Play failed:", err);
+    audio.play().catch(() => {
       setConnecting(false);
-      setMetadata((prev) => ({ ...prev, title: "Erro ao reproduzir", artist: "Toque no play novamente" }));
+      setMetadata(p => ({ ...p, title: "Erro ao reproduzir", artist: "Toque play novamente" }));
     });
-  }, [playing, connecting, muted]);
+  }, [playing, connecting, muted, volume]);
 
   const toggleMute = useCallback(() => {
-    setMuted((m) => {
-      const nextMuted = !m;
-      if (audioRef.current) {
-        audioRef.current.muted = nextMuted;
-        audioRef.current.volume = nextMuted ? 0 : 1;
-      }
-      return nextMuted;
+    setMuted(m => {
+      const next = !m;
+      if (audioRef.current) { audioRef.current.muted = next; audioRef.current.volume = next ? 0 : volume; }
+      return next;
     });
-  }, []);
+  }, [volume]);
+
+  const handleVolume = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = parseFloat(e.target.value);
+    setVolume(v);
+    if (audioRef.current) { audioRef.current.volume = muted ? 0 : v; }
+  }, [muted]);
+
+  const statusColor = playing ? "text-neon-green" : connecting ? "text-accent" : "text-muted-foreground";
+  const statusText = playing ? "ON AIR" : connecting ? "LINKING" : "OFFLINE";
 
   return (
-    <div className="flex flex-col bg-card/90 backdrop-blur-md border border-border rounded-sm overflow-hidden font-mono relative max-w-full">
+    <div className="flex flex-col h-full font-mono select-none">
       <audio ref={audioRef} playsInline />
 
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/30">
-        <button onClick={toggleMute} className="text-muted-foreground hover:text-primary transition-colors">
-          {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-        </button>
-        <span className="text-[10px] font-display tracking-[0.2em] text-primary">
-          IGOR·FUCKN·STATION
-        </span>
-        <span className={`text-[9px] tracking-wider ${playing ? "text-neon-green" : connecting ? "text-accent" : "text-muted-foreground"}`}>
-          {playing ? "NO AR" : connecting ? "CONECTANDO" : "OFFLINE"}
-        </span>
-      </div>
-
-      {connecting && (
-        <div className="px-3 py-1 text-[10px] tracking-widest text-accent border-b border-border/50 bg-muted/20">
-          ESTABELECENDO CONEXÃO COM O STREAM...
+      {/* === TOP: Album Art + Metadata === */}
+      <div className="relative flex items-center gap-2.5 p-2">
+        {/* Album art */}
+        <div className="relative shrink-0 w-14 h-14 rounded overflow-hidden border border-border/50"
+          style={{ boxShadow: playing ? "0 0 16px hsl(190 100% 50% / 0.25)" : "none" }}>
+          {metadata.albumArt ? (
+            <img src={metadata.albumArt} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-muted/40 flex items-center justify-center">
+              <Music2 className="w-5 h-5 text-muted-foreground/40" />
+            </div>
+          )}
+          {playing && (
+            <div className="absolute inset-0 border border-primary/30 rounded animate-pulse-glow pointer-events-none" />
+          )}
         </div>
-      )}
 
-      {/* Corner accents */}
-      <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-primary/40" />
-      <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-primary/40" />
-      <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-primary/40" />
-      <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary/40" />
-
-      {/* Vinyl + Metadata */}
-      <div className="flex flex-col items-center pt-5 pb-2 px-4">
-        <VinylDisc albumArt={metadata.albumArt} playing={playing} />
-
-        <div className="mt-3 text-center overflow-hidden max-w-full">
-          <h3 className="text-sm font-display text-foreground truncate max-w-full">
+        {/* Metadata */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Radio className={`w-2.5 h-2.5 shrink-0 ${statusColor}`} />
+            <span className={`text-[8px] tracking-[0.2em] uppercase font-display ${statusColor}`}>{statusText}</span>
+          </div>
+          <p className="text-[11px] text-foreground font-display truncate leading-tight">
             {metadata.title}
-          </h3>
-          <p
-            className="text-xs mt-0.5 truncate max-w-full"
-            style={playing ? {
-              animation: "artist-glow-pulse 3s ease-in-out infinite",
-            } : { color: "hsl(190 30% 50%)" }}
-          >
-            {playing && (
-              <svg className="inline-block w-2 h-2 mr-1 animate-pulse-glow" viewBox="0 0 8 2">
-                <rect width="8" height="2" fill="hsl(190,100%,50%)" rx="1" />
-              </svg>
-            )}
-            {metadata.artist}
-            {playing && (
-              <svg className="inline-block w-2 h-2 ml-1 animate-pulse-glow" viewBox="0 0 8 2">
-                <rect width="8" height="2" fill="hsl(190,100%,50%)" rx="1" />
-              </svg>
-            )}
+          </p>
+          <p className="text-[9px] text-muted-foreground truncate leading-tight mt-0.5">
+            {metadata.artist || "—"}
           </p>
         </div>
       </div>
 
-      {/* Play button */}
-      <div className="flex flex-col items-center justify-center py-1 pb-3 gap-2">
-        <CyberPlayButton playing={playing} onClick={togglePlay} energy={energy} />
+      {/* === CONTROLS === */}
+      <div className="flex items-center gap-2 px-2 py-1.5 border-t border-border/30">
+        {/* Play/Pause */}
         <button
-          type="button"
           onClick={togglePlay}
-          className="px-3 py-1 text-[10px] tracking-widest border border-primary/40 text-primary bg-primary/10 hover:bg-primary/20 rounded-sm"
+          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all border"
+          style={{
+            borderColor: playing ? "hsl(190 100% 50% / 0.6)" : "hsl(190 100% 50% / 0.2)",
+            background: playing
+              ? "radial-gradient(circle, hsl(190 100% 50% / 0.15), hsl(230 25% 8%))"
+              : "hsl(230 25% 8%)",
+            boxShadow: playing ? "0 0 12px hsl(190 100% 50% / 0.2)" : "none",
+          }}
+          aria-label={playing ? "Pausar" : "Play"}
         >
-          {playing || connecting ? "PAUSAR STREAM" : "PLAY STREAM"}
+          {playing ? (
+            <Pause className="w-3.5 h-3.5 text-primary" />
+          ) : (
+            <Play className="w-3.5 h-3.5 text-primary ml-0.5" />
+          )}
         </button>
+
+        {/* Mute */}
+        <button onClick={toggleMute} className="text-muted-foreground hover:text-primary transition-colors shrink-0" aria-label="Mute">
+          {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+        </button>
+
+        {/* Volume slider */}
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={muted ? 0 : volume}
+          onChange={handleVolume}
+          className="flex-1 h-1 appearance-none rounded-full cursor-pointer"
+          style={{
+            background: `linear-gradient(to right, hsl(190 100% 50%) ${(muted ? 0 : volume) * 100}%, hsl(230 20% 15%) ${(muted ? 0 : volume) * 100}%)`,
+          }}
+          aria-label="Volume"
+        />
+        <span className="text-[8px] text-muted-foreground tabular-nums w-6 text-right shrink-0">
+          {Math.round((muted ? 0 : volume) * 100)}%
+        </span>
       </div>
 
-      {/* Track History */}
-      <TrackHistory tracks={history} />
+      {/* === HISTORY === */}
+      <div className="border-t border-border/30 px-2 py-1 flex-1 min-h-0 overflow-y-auto">
+        <p className="text-[8px] text-muted-foreground tracking-[0.15em] uppercase mb-1">Histórico</p>
+        {history.length === 0 ? (
+          <p className="text-[9px] text-muted-foreground/40 text-center py-2">AGUARDANDO SINAL...</p>
+        ) : (
+          <div className="space-y-0.5">
+            {history.map((t, i) => (
+              <div key={t.timestamp} className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm text-[9px] ${i === 0 ? "bg-primary/10 border-l-2 border-primary" : "border-l-2 border-transparent opacity-50"}`}>
+                {t.albumArt ? (
+                  <img src={t.albumArt} alt="" className="w-5 h-5 rounded-sm object-cover shrink-0" />
+                ) : (
+                  <div className="w-5 h-5 rounded-sm bg-muted/30 shrink-0" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-foreground truncate leading-tight">{t.title}</p>
+                  <p className="text-muted-foreground truncate leading-tight text-[8px]">{t.artist}</p>
+                </div>
+                {i === 0 && <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow shrink-0" />}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Visualizer */}
-      <AudioVisualizer analyser={analyserRef.current} playing={playing} />
+      {/* === VISUALIZER === */}
+      <div className="h-12 border-t border-border/30 shrink-0">
+        <AudioVisualizer analyser={analyserRef.current} playing={playing} />
+      </div>
     </div>
   );
 };
