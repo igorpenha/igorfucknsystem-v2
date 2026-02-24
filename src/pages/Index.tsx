@@ -189,7 +189,7 @@ const Index = () => {
           {/* Right Column */}
           <div className="lg:col-span-3 min-h-0 grid grid-rows-[minmax(0,1fr)_auto] gap-3 overflow-hidden">
             <motion.div ref={webRadioRef} custom={1} initial="hidden" animate="visible" variants={fadeUp} className="min-h-0 overflow-hidden">
-              <HudPanel title="WebRadio" className="h-full overflow-hidden flex flex-col">
+              <HudPanel title="IGOR FUCKN STATION" className="h-full overflow-hidden flex flex-col">
                 <WebRadio />
               </HudPanel>
             </motion.div>
