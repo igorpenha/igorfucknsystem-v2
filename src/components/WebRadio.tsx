@@ -9,7 +9,7 @@ const METADATA_URL = `${FILE_API_BASE_URL}/api/radio/now-playing`;
 const METADATA_INTERVAL = 10_000;
 const BAR_COUNT = 32;
 
-/* ── Mini Audio Bars (CSS-only animated SVG) ── */
+/* ── Mini Audio Bars ── */
 const MiniAudioBars = ({ active }: { active: boolean }) => (
   <svg width="16" height="24" viewBox="0 0 16 24" className="shrink-0">
     {[0, 1, 2, 3].map(i => (
@@ -36,7 +36,7 @@ const MiniAudioBars = ({ active }: { active: boolean }) => (
   </svg>
 );
 
-/* ── Animated Play/Pause SVG ── */
+/* ── Play/Pause Icon ── */
 const PlayPauseIcon = ({ playing, connecting }: { playing: boolean; connecting: boolean }) => {
   if (connecting) {
     return (
@@ -63,7 +63,7 @@ const PlayPauseIcon = ({ playing, connecting }: { playing: boolean; connecting: 
   );
 };
 
-/* ── Animated Volume SVG ── */
+/* ── Volume Icon ── */
 const VolumeIcon = ({ muted }: { muted: boolean }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--accent))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M11 5 L6 9 H2 V15 H6 L11 19Z" fill="hsl(var(--accent)/0.15)" />
@@ -120,10 +120,8 @@ const WebRadio = () => {
           const newCoverPrev = `${FILE_API_BASE_URL}/api/radio/artwork-prev?t=${ts}`;
           const newCoverNext = `${FILE_API_BASE_URL}/api/radio/artwork-next?t=${ts}`;
           const trackId = `${data.artist}-${data.title}`;
-          console.log("URL da Capa:", newCover);
           setTrack(prev => {
             if (prev.cover !== newCover) setCoverError(false);
-            // Trigger carousel transition when track changes
             if (lastTrackRef.current && lastTrackRef.current !== trackId) {
               setTransitionKey(k => k + 1);
             }
@@ -152,7 +150,7 @@ const WebRadio = () => {
     return () => { active = false; clearInterval(id); };
   }, [playing]);
 
-  // ── Web Audio API analyser ──
+  // ── Web Audio analyser ──
   const startAnalyser = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -258,16 +256,30 @@ const WebRadio = () => {
     if (audioRef.current) audioRef.current.volume = muted ? 0 : v;
   }, [muted]);
 
+  /* ════════════════════════════════════════════
+     LAYOUT: CSS Grid com 4 rows fixas
+     [controls]  auto
+     [spectrum]  1fr  (expande)
+     [carousel]  140px (fixo)
+     [footer]    auto
+     ════════════════════════════════════════════ */
   return (
-    <div className="flex flex-col h-full font-mono select-none overflow-hidden relative">
+    <div
+      className="font-mono select-none overflow-hidden relative"
+      style={{
+        display: "grid",
+        gridTemplateRows: "auto 1fr 140px auto",
+        height: "100%",
+        width: "100%",
+      }}
+    >
       <audio ref={audioRef} playsInline crossOrigin="anonymous" />
 
-      {/* ══════════ TOPO: Controles ══════════ */}
+      {/* ═══ ROW 1: Controles ═══ */}
       <div className="px-2 pt-2 pb-1.5 flex items-center gap-2 border-b border-border/15">
-        {/* Play/Pause */}
         <button
           onClick={togglePlay}
-          className="relative w-10 h-10 shrink-0 border border-primary/40 bg-primary/8 hover:bg-primary/18 transition-all flex items-center justify-center"
+          className="relative w-10 h-10 shrink-0 border border-primary/40 bg-primary/[0.08] hover:bg-primary/[0.18] transition-all flex items-center justify-center"
           style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
           aria-label={playing ? "Pausar" : "Play"}
         >
@@ -282,17 +294,15 @@ const WebRadio = () => {
           )}
         </button>
 
-        {/* Mute */}
         <button
           onClick={toggleMute}
-          className="w-8 h-8 shrink-0 border border-accent/25 bg-accent/5 hover:bg-accent/12 transition-all flex items-center justify-center"
+          className="w-8 h-8 shrink-0 border border-accent/25 bg-accent/5 hover:bg-accent/[0.12] transition-all flex items-center justify-center"
           style={{ clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}
           aria-label="Mute"
         >
           <VolumeIcon muted={muted} />
         </button>
 
-        {/* Volume slider */}
         <div className="flex-1 relative flex items-center">
           <input
             type="range" min={0} max={1} step={0.01}
@@ -310,15 +320,14 @@ const WebRadio = () => {
           {Math.round((muted ? 0 : volume) * 100)}%
         </span>
 
-        {/* Live badge */}
         <AnimatePresence mode="wait">
           {playing ? (
             <motion.div key="live" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="flex items-center gap-1 px-2 py-0.5 border border-red-500/40 bg-red-500/10"
+              className="flex items-center gap-1 px-2 py-0.5 border border-destructive/40 bg-destructive/10"
               style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
             >
-              <motion.div className="w-1.5 h-1.5 rounded-full bg-red-500" animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1, repeat: Infinity }} />
-              <span className="text-[7px] tracking-[0.3em] text-red-400 font-display">LIVE</span>
+              <motion.div className="w-1.5 h-1.5 rounded-full bg-destructive" animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1, repeat: Infinity }} />
+              <span className="text-[7px] tracking-[0.3em] text-destructive font-display">LIVE</span>
             </motion.div>
           ) : (
             <motion.div key="off" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -334,8 +343,8 @@ const WebRadio = () => {
         </AnimatePresence>
       </div>
 
-      {/* ══════════ MEIO: Visualizador de Espectro ══════════ */}
-      <div className="px-2 flex-1 min-h-[80px] flex items-end justify-center gap-[1.5px] py-2">
+      {/* ═══ ROW 2: Visualizador de Espectro (flex-grow) ═══ */}
+      <div className="px-2 flex items-end justify-center gap-[1.5px] py-2 min-h-0">
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
           const hue = 185 + (i / BAR_COUNT) * 135;
           return (
@@ -354,12 +363,12 @@ const WebRadio = () => {
         })}
       </div>
 
-      {/* ── Linha divisória ── */}
-      <div className="mx-2 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+      {/* ═══ ROW 3: Carrossel 3D + Metadados (altura fixa 140px) ═══ */}
+      <div className="px-2 flex flex-col items-center justify-center gap-1 border-t border-border/15 overflow-hidden">
+        {/* Linha divisória decorativa */}
+        <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
 
-      {/* ══════════ BASE: Carrossel 3D + Metadados ══════════ */}
-      <div className="px-2 pt-2 pb-1.5 flex flex-col items-center gap-2 w-full min-h-[140px]">
-        {/* Cover Flow 3D Carousel */}
+        {/* Carousel isolado em Error Boundary */}
         <CarouselErrorBoundary>
           <CoverFlowCarousel
             currentCover={coverError ? "" : track.cover}
@@ -370,7 +379,7 @@ const WebRadio = () => {
           />
         </CarouselErrorBoundary>
 
-        {/* Metadata + Mini visualizer */}
+        {/* Metadata */}
         <div className="flex items-center gap-2 w-full max-w-[220px]">
           <MiniAudioBars active={playing} />
           <div className="flex-1 min-w-0 space-y-0.5 text-center">
@@ -388,7 +397,7 @@ const WebRadio = () => {
         </div>
       </div>
 
-      {/* ── Bottom decorative ── */}
+      {/* ═══ ROW 4: Footer decorativo ═══ */}
       <div className="px-2 py-0.5 flex justify-between text-[5px] tracking-[0.2em] text-muted-foreground/15 uppercase border-t border-border/8">
         <span>CODEC: MP3</span>
         <span>LATENCY: LOW</span>

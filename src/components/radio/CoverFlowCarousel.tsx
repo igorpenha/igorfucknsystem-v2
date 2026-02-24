@@ -10,9 +10,9 @@ interface CoverFlowCarouselProps {
   transitionKey: number;
 }
 
-const COVER_SIZE = 112;
-const SIDE_SCALE = 0.7;
-const SIDE_OFFSET = 76;
+const COVER_SIZE = 80;
+const SIDE_SCALE = 0.65;
+const SIDE_OFFSET = 60;
 const Y_ROTATION = 45;
 
 const CoverFlowCarousel = ({
