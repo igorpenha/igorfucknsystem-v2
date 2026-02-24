@@ -22,10 +22,27 @@ const InfoWidgets = () => {
     setOnlineUsers(Math.floor(Math.random() * 3) + 1);
   }, []);
 
-  // Simulated weather
+  // Real weather from public IP geolocation
   useEffect(() => {
-    setTemp(`${Math.floor(Math.random() * 15 + 18)}°C`);
-    setCity("São Paulo");
+    const fetchWeather = async () => {
+      try {
+        // Step 1: Get city from public IP
+        const geoRes = await fetch("https://ip-api.com/json/?fields=city,regionName,country");
+        const geoData = await geoRes.json();
+        const detectedCity = geoData.city || "Unknown";
+        setCity(detectedCity);
+
+        // Step 2: Get temperature for that city
+        const weatherRes = await fetch(`https://wttr.in/${encodeURIComponent(detectedCity)}?format=%t&m`);
+        const weatherText = await weatherRes.text();
+        const cleaned = weatherText.trim().replace("+", "");
+        setTemp(cleaned || "N/A");
+      } catch {
+        setCity("OFFLINE");
+        setTemp("N/A");
+      }
+    };
+    fetchWeather();
   }, []);
 
   const widgets = [
