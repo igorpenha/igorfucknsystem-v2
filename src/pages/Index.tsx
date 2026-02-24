@@ -144,11 +144,11 @@ const Index = () => {
             </motion.div>
           </div>
 
-          {/* Center Column - File Viewer */}
+          {/* Center Column - File Viewer + Camera */}
           <div ref={fileViewerRef} className="lg:col-span-6 flex flex-col gap-3 min-h-0 overflow-hidden">
-            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="flex flex-col flex-1 min-h-0" style={{ height: fileViewerMaxH, maxHeight: fileViewerMaxH } as undefined}>
-              <HudPanel title="Lista de Arquivos" className="flex-1 min-h-0 overflow-hidden flex flex-col">
-                <div className="flex-1 overflow-y-auto min-h-0">
+            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
+              <HudPanel title="Lista de Arquivos" className="overflow-hidden flex flex-col">
+                <div className="overflow-y-auto min-h-0" style={{ maxHeight: 220 }}>
                   {activeFolder ? (
                     <FileViewer
                       folderName={activeFolder}
@@ -163,7 +163,7 @@ const Index = () => {
                       }}
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-full min-h-[200px]">
+                    <div className="flex items-center justify-center h-full min-h-[80px]">
                       <span className="text-xs text-muted-foreground tracking-wider">
                         SELECIONE UMA PASTA PARA VISUALIZAR OS ARQUIVOS
                       </span>
@@ -173,8 +173,10 @@ const Index = () => {
               </HudPanel>
             </motion.div>
 
-            {/* Security Camera Panel - stretches to fill remaining space */}
-            <motion.div ref={cameraPanelRef} custom={3} initial="hidden" animate="visible" variants={fadeUp} style={cameraMaxH ? { height: cameraMaxH } : undefined}>
+            {/* Security Camera Panel - fills remaining space */}
+            <motion.div ref={cameraPanelRef} custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0"
+              style={cameraMaxH ? { maxHeight: cameraMaxH } : undefined}
+            >
               <SecurityCameraPanel />
             </motion.div>
           </div>
