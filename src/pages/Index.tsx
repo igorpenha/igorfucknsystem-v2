@@ -151,42 +151,36 @@ const Index = () => {
         <div className="lg:col-span-3 lg:row-span-1 min-h-0 overflow-hidden flex flex-col gap-3">
           <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0">
             <HudPanel title="Ferramentas" className="h-full overflow-hidden flex flex-col">
-              <div className="flex flex-col gap-1.5 flex-1 min-h-0 overflow-y-auto hud-scroll">
+              <div className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto hud-scroll">
                 <button
                   onClick={() => { setCalcOpen(v => !v); setNetworkOpen(false); }}
-                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-sm transition-all duration-200 border backdrop-blur-sm group ${calcOpen ? "border-accent/60 bg-accent/15 text-foreground shadow-[0_0_12px_hsl(var(--accent)/0.2)]" : "border-accent/20 bg-accent/5 hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_hsl(var(--accent)/0.15)] text-muted-foreground hover:text-foreground"}`}
+                  className={`flex items-center gap-2 w-full px-2.5 py-1.5 transition-all duration-200 border-l-2 group ${calcOpen ? "border-l-primary bg-primary/10 text-foreground shadow-[inset_0_0_12px_hsl(var(--primary)/0.1)]" : "border-l-primary/30 bg-transparent hover:border-l-primary hover:bg-primary/5 text-muted-foreground hover:text-foreground"}`}
                 >
-                  <div className={`w-7 h-7 rounded flex items-center justify-center border transition-all ${calcOpen ? "border-accent/60 bg-accent/20 shadow-[0_0_8px_hsl(var(--accent)/0.3)]" : "border-accent/30 bg-accent/10 group-hover:border-accent/60"}`}>
-                    <CalculatorIcon className={`w-4 h-4 transition-colors ${calcOpen ? "text-accent" : "text-accent/70 group-hover:text-accent"}`} />
-                  </div>
-                  <span className="text-[10px] tracking-[0.2em] font-display">CALCULADORA</span>
+                  <CalculatorIcon className={`w-3.5 h-3.5 shrink-0 transition-colors ${calcOpen ? "text-primary" : "text-primary/60 group-hover:text-primary"}`} />
+                  <span className="text-[9px] tracking-[0.25em] font-display flex-1 text-left">CALCULADORA</span>
+                  <div className={`w-1 h-1 rounded-full transition-all ${calcOpen ? "bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.6)]" : "bg-primary/20 group-hover:bg-primary/50"}`} />
                 </button>
                 <button
                   onClick={() => { setNetworkOpen(v => !v); setCalcOpen(false); }}
-                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-sm transition-all duration-200 border backdrop-blur-sm group ${networkOpen ? "border-accent/60 bg-accent/15 text-foreground shadow-[0_0_12px_hsl(var(--accent)/0.2)]" : "border-accent/20 bg-accent/5 hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_hsl(var(--accent)/0.15)] text-muted-foreground hover:text-foreground"}`}
+                  className={`flex items-center gap-2 w-full px-2.5 py-1.5 transition-all duration-200 border-l-2 group ${networkOpen ? "border-l-primary bg-primary/10 text-foreground shadow-[inset_0_0_12px_hsl(var(--primary)/0.1)]" : "border-l-primary/30 bg-transparent hover:border-l-primary hover:bg-primary/5 text-muted-foreground hover:text-foreground"}`}
                 >
-                  <div className={`w-7 h-7 rounded flex items-center justify-center border transition-all ${networkOpen ? "border-accent/60 bg-accent/20 shadow-[0_0_8px_hsl(var(--accent)/0.3)]" : "border-accent/30 bg-accent/10 group-hover:border-accent/60"}`}>
-                    <Wifi className={`w-4 h-4 transition-colors ${networkOpen ? "text-accent" : "text-accent/70 group-hover:text-accent"}`} />
-                  </div>
-                  <span className="text-[10px] tracking-[0.2em] font-display">IPS DA REDE</span>
+                  <Wifi className={`w-3.5 h-3.5 shrink-0 transition-colors ${networkOpen ? "text-primary" : "text-primary/60 group-hover:text-primary"}`} />
+                  <span className="text-[9px] tracking-[0.25em] font-display flex-1 text-left">IPS DA REDE</span>
+                  <div className={`w-1 h-1 rounded-full transition-all ${networkOpen ? "bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.6)]" : "bg-primary/20 group-hover:bg-primary/50"}`} />
                 </button>
-                {/* Placeholder: NET_SNIFFER */}
                 <button
-                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-sm transition-all duration-200 border backdrop-blur-sm group border-accent/20 bg-accent/5 hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_hsl(var(--accent)/0.15)] text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-2 w-full px-2.5 py-1.5 transition-all duration-200 border-l-2 border-l-primary/30 bg-transparent hover:border-l-primary hover:bg-primary/5 text-muted-foreground hover:text-foreground group"
                 >
-                  <div className="w-7 h-7 rounded flex items-center justify-center border border-accent/30 bg-accent/10 group-hover:border-accent/60 transition-all">
-                    <Radar className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
-                  </div>
-                  <span className="text-[10px] tracking-[0.2em] font-display">NET_SNIFFER</span>
+                  <Radar className="w-3.5 h-3.5 shrink-0 text-primary/60 group-hover:text-primary transition-colors" />
+                  <span className="text-[9px] tracking-[0.25em] font-display flex-1 text-left">NET_SNIFFER</span>
+                  <div className="w-1 h-1 rounded-full bg-primary/20 group-hover:bg-primary/50 transition-all" />
                 </button>
-                {/* Placeholder: PACKET_INJECT */}
                 <button
-                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-sm transition-all duration-200 border backdrop-blur-sm group border-accent/20 bg-accent/5 hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_hsl(var(--accent)/0.15)] text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-2 w-full px-2.5 py-1.5 transition-all duration-200 border-l-2 border-l-primary/30 bg-transparent hover:border-l-primary hover:bg-primary/5 text-muted-foreground hover:text-foreground group"
                 >
-                  <div className="w-7 h-7 rounded flex items-center justify-center border border-accent/30 bg-accent/10 group-hover:border-accent/60 transition-all">
-                    <Syringe className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
-                  </div>
-                  <span className="text-[10px] tracking-[0.2em] font-display">PACKET_INJECT</span>
+                  <Syringe className="w-3.5 h-3.5 shrink-0 text-primary/60 group-hover:text-primary transition-colors" />
+                  <span className="text-[9px] tracking-[0.25em] font-display flex-1 text-left">PACKET_INJECT</span>
+                  <div className="w-1 h-1 rounded-full bg-primary/20 group-hover:bg-primary/50 transition-all" />
                 </button>
               </div>
             </HudPanel>
