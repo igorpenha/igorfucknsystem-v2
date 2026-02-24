@@ -13,7 +13,7 @@ const InfoWidgets = () => {
         {/* BLOCO 1 - HD */}
         <div className="bg-muted/50 rounded-sm border border-border overflow-hidden">
           <div className="px-2 py-1 border-b border-border bg-muted/80">
-            <span className="text-[7px] font-display tracking-[0.2em] text-[hsl(120,100%,45%)]">HD</span>
+            <span className="text-[7px] font-display tracking-[0.2em] text-primary">HD</span>
           </div>
           <div className="flex items-center gap-2 px-2 py-1.5">
             <HardDrive
@@ -27,7 +27,7 @@ const InfoWidgets = () => {
         {/* BLOCO 2 - TEMP */}
         <div className="bg-muted/50 rounded-sm border border-border overflow-hidden">
           <div className="px-2 py-1 border-b border-border bg-muted/80">
-            <span className="text-[7px] font-display tracking-[0.2em] text-[hsl(15,100%,55%)]">TEMP.</span>
+            <span className="text-[7px] font-display tracking-[0.2em] text-primary">TEMP.</span>
           </div>
           <div className="flex items-center gap-2 px-2 py-1.5">
             <Cpu
@@ -41,7 +41,7 @@ const InfoWidgets = () => {
         {/* BLOCO 3 - REDE */}
         <div className="bg-muted/50 rounded-sm border border-border overflow-hidden">
           <div className="px-2 py-1 border-b border-border bg-muted/80">
-            <span className="text-[7px] font-display tracking-[0.2em] text-accent">REDE</span>
+            <span className="text-[7px] font-display tracking-[0.2em] text-primary">REDE</span>
           </div>
           <div className="flex items-center gap-2 px-2 py-1.5">
             <div className="flex flex-col gap-0.5">
@@ -60,7 +60,7 @@ const InfoWidgets = () => {
         {/* BLOCO 4 - IPS */}
         <div className="bg-muted/50 rounded-sm border border-border overflow-hidden">
           <div className="px-2 py-1 border-b border-border bg-muted/80">
-            <span className="text-[7px] font-display tracking-[0.2em] text-[hsl(50,100%,55%)]">IPS NA REDE</span>
+            <span className="text-[7px] font-display tracking-[0.2em] text-primary">IPS NA REDE</span>
           </div>
           <div className="flex items-center gap-2 px-2 py-1.5">
             <Network

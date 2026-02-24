@@ -400,7 +400,7 @@ const WebRadio = () => {
             <p className="text-[11px] text-foreground font-display tracking-wider truncate leading-tight drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]">
               {track.title}
             </p>
-            <p className="text-lg text-accent tracking-wider truncate leading-tight font-display drop-shadow-[0_0_8px_hsl(var(--accent)/0.5)]">
+            <p className={`tracking-wider truncate leading-tight font-display ${track.artist === "SCANNING..." ? "text-[9px] text-muted-foreground/40" : "text-lg text-accent drop-shadow-[0_0_8px_hsl(var(--accent)/0.5)]"}`}>
               {track.artist}
             </p>
           </div>
