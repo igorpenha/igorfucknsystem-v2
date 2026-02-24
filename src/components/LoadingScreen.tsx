@@ -251,7 +251,7 @@ const CollapsingLogo = ({ progress, size }: { progress: number; size: number }) 
 
 const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<"boot" | "reveal" | "pulse" | "shatter" | "done">("boot");
+  const [phase, setPhase] = useState<"boot" | "reveal" | "pulse" | "done">("boot");
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
@@ -306,43 +306,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     } catch {}
   }, []);
 
-  // Exit sound
-  const playExitSound = useCallback(() => {
-    try {
-      const ac = new AudioContext();
-      const osc1 = ac.createOscillator();
-      const g1 = ac.createGain();
-      osc1.type = "sawtooth";
-      osc1.frequency.setValueAtTime(3000, ac.currentTime);
-      osc1.frequency.exponentialRampToValueAtTime(80, ac.currentTime + 0.6);
-      g1.gain.setValueAtTime(0.15, ac.currentTime);
-      g1.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.7);
-      osc1.connect(g1).connect(ac.destination);
-      osc1.start();
-      osc1.stop(ac.currentTime + 0.7);
-
-      const bufLen = ac.sampleRate * 0.8;
-      const buf = ac.createBuffer(2, bufLen, ac.sampleRate);
-      for (let ch = 0; ch < 2; ch++) {
-        const d = buf.getChannelData(ch);
-        for (let i = 0; i < bufLen; i++) {
-          const t = i / bufLen;
-          d[i] = (Math.random() * 2 - 1) * t * t * 0.4;
-        }
-      }
-      const src = ac.createBufferSource();
-      src.buffer = buf;
-      const gn = ac.createGain();
-      gn.gain.setValueAtTime(0.2, ac.currentTime);
-      gn.gain.linearRampToValueAtTime(0, ac.currentTime + 0.8);
-      const bp = ac.createBiquadFilter();
-      bp.type = "bandpass";
-      bp.frequency.setValueAtTime(1500, ac.currentTime);
-      bp.Q.setValueAtTime(2, ac.currentTime);
-      src.connect(bp).connect(gn).connect(ac.destination);
-      src.start();
-    } catch {}
-  }, []);
+  // (exit sound removed)
 
   // Progress sound + timer
   useEffect(() => {
@@ -395,12 +359,8 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
         if (tickGain && ac) tickGain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.2);
         setTimeout(() => { osc?.stop(); tickOsc?.stop(); }, 400);
 
-        setPhase("shatter");
-        playExitSound();
-        setTimeout(() => {
-          setPhase("done");
-          setTimeout(() => onCompleteRef.current(), 400);
-        }, 1200);
+        setPhase("done");
+        setTimeout(() => onCompleteRef.current(), 400);
       }
     };
     requestAnimationFrame(tick);
@@ -408,7 +368,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     return () => {
       try { osc?.stop(); tickOsc?.stop(); ac?.close(); } catch {}
     };
-  }, [playExitSound]);
+  }, []);
 
   // Phase transitions
   useEffect(() => {
@@ -425,7 +385,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   const isBoot = phase === "boot";
   const isReveal = phase === "reveal";
   const isPulse = phase === "pulse";
-  const isShatter = phase === "shatter";
+  
 
   // Collapse progress: starts at ~30% loading, accelerates toward end
   const collapseProgress = useMemo(() => {
@@ -454,7 +414,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
             }}
             animate={
               isPulse ? { scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }
-              : isShatter ? { scale: 2, opacity: 0 }
               : { scale: 1, opacity: isBoot ? 0 : 0.6 }
             }
             transition={
@@ -468,7 +427,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
             className="absolute z-[1] w-[260px] h-[260px] md:w-[380px] md:h-[380px] pointer-events-none"
             viewBox="0 0 500 500"
             style={{ marginTop: "-20px" }}
-            animate={isShatter ? { opacity: 0, scale: 1.3 } : { opacity: 1, scale: 1 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6 }}
           >
             <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
@@ -481,18 +440,14 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
           <motion.div
             className="relative z-10 w-[260px] h-[260px] md:w-[380px] md:h-[380px]"
             animate={
-              isShatter
-                ? { opacity: 0, scale: 0.85 }
-                : isBoot
+              isBoot
                 ? { opacity: [0, 0.1, 0, 0.4, 0, 0.8, 0.5, 1], scale: [0.8, 0.85, 0.8, 0.9, 0.85, 1], rotate: [0, -1, 1, -0.5, 0] }
                 : isReveal
                 ? { opacity: 1, scale: 1, rotate: 0 }
                 : { opacity: 1, scale: 1 }
             }
             transition={
-              isShatter
-                ? { duration: 1, ease: "easeOut" }
-                : isBoot
+              isBoot
                 ? { duration: 1, ease: "easeInOut" }
                 : { duration: 0.5 }
             }
@@ -500,7 +455,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
             <DigitalNoise active={isBoot} />
 
             {/* Collapsing logo canvas — replaces static img during pulse phase */}
-            {(isPulse || isShatter) ? (
+            {isPulse ? (
               <CollapsingLogo progress={collapseProgress} size={logoSize} />
             ) : (
               <img
@@ -552,9 +507,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
               }}
               initial={{ opacity: 0, y: 20 }}
               animate={
-                isShatter
-                  ? { opacity: 0, y: -30, scale: 1.3 }
-                  : collapseProgress > 0.5
+                collapseProgress > 0.5
                   ? { opacity: Math.max(0, 1 - (collapseProgress - 0.5) * 2), y: 0, scale: 1 }
                   : isReveal || isPulse
                   ? { opacity: 1, y: 0, scale: 1 }
@@ -569,9 +522,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
               style={{ color: "hsl(190 100% 60%)", textShadow: "0 0 10px hsl(190 100% 50% / 0.5)" }}
               initial={{ opacity: 0, y: 10 }}
               animate={
-                isShatter
-                  ? { opacity: 0, y: -20 }
-                  : collapseProgress > 0.5
+                collapseProgress > 0.5
                   ? { opacity: Math.max(0, 1 - (collapseProgress - 0.5) * 2), y: 0 }
                   : isReveal || isPulse
                   ? { opacity: 1, y: 0 }
@@ -584,7 +535,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
           </motion.div>
 
           {/* Progress bar */}
-          {!isShatter && (
+          {(
             <motion.div
               className="w-52 md:w-72 mt-8 z-10"
               initial={{ opacity: 0 }}
