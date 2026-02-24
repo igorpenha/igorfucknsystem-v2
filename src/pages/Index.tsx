@@ -80,9 +80,9 @@ const Index = () => {
       if (calcRef.current && fileViewerRef.current) {
         const calcRect = calcRef.current.getBoundingClientRect();
         const viewerTop = fileViewerRef.current.getBoundingClientRect().top;
-        // Align file viewer bottom with ~1 button row above calculator bottom (top of + button)
-        const oneRowH = 88; // approximate 2 button rows height
-        const h = calcRect.bottom - viewerTop - oneRowH;
+        // Align file viewer bottom with top of last button row (~20% from calc bottom)
+        const lastRowOffset = calcRect.height * 0.2;
+        const h = calcRect.bottom - viewerTop - lastRowOffset;
         if (h > 80) setFileViewerH(h);
       }
       // Camera panel: align bottom with left column bottom
