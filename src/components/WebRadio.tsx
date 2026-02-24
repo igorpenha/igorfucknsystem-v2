@@ -26,6 +26,7 @@ const WebRadio = () => {
     album: "NO_DATA",
     cover: "",
   });
+  const [coverError, setCoverError] = useState(false);
 
   // ── Metadata polling ──
   useEffect(() => {
@@ -38,11 +39,15 @@ const WebRadio = () => {
         if (!res.ok) throw new Error("metadata fetch failed");
         const data = await res.json();
         if (active) {
-          setTrack({
-            title: data.title || "LIVE BROADCAST",
-            artist: data.artist || "SCANNING...",
-            album: data.album || "NO_DATA",
-            cover: data.coverUrl || "",
+          const newCover = data.coverUrl || "";
+          setTrack(prev => {
+            if (prev.cover !== newCover) setCoverError(false);
+            return {
+              title: data.title || "LIVE BROADCAST",
+              artist: data.artist || "SCANNING...",
+              album: data.album || "NO_DATA",
+              cover: newCover,
+            };
           });
         }
       } catch {
@@ -256,8 +261,13 @@ const WebRadio = () => {
             transition: "border-color 0.3s, box-shadow 0.3s",
           }}
         >
-          {track.cover ? (
-            <img src={track.cover} alt="Album cover" className="w-full h-full object-cover" />
+          {track.cover && !coverError ? (
+            <img
+              src={track.cover}
+              alt="Album cover"
+              className="w-full h-full object-cover"
+              onError={() => setCoverError(true)}
+            />
           ) : (
             <div className="flex flex-col items-center justify-center gap-0.5">
               <div className="w-5 h-5 border border-primary/20 flex items-center justify-center" style={{ clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}>
