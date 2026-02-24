@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Volume2, VolumeX } from "lucide-react";
-import Hls from "hls.js";
 import VinylDisc from "./radio/VinylDisc";
 import CyberPlayButton from "./radio/CyberPlayButton";
 import TrackHistory from "./radio/TrackHistory";
@@ -192,12 +191,8 @@ const WebRadio = () => {
     setEnergy(0);
   }, []);
 
-  const hlsRef = useRef<Hls | null>(null);
-
   const togglePlay = useCallback(() => {
     if (playing) {
-      hlsRef.current?.destroy();
-      hlsRef.current = null;
       audioRef.current?.pause();
       audioRef.current = null;
       stopAnalyser();
@@ -208,38 +203,16 @@ const WebRadio = () => {
       audio.volume = muted ? 0 : 1;
       audioRef.current = audio;
 
-      const tryPlay = () => {
-        audio.play().then(() => {
-          setPlaying(true);
-          startAnalyser();
-        }).catch((err) => {
-          console.error("Play failed:", err);
-          setMetadata(prev => ({ ...prev, title: "Erro ao reproduzir", artist: "Verifique a conexão" }));
-        });
-      };
-
-      // Try HLS first if supported
-      if (Hls.isSupported()) {
-        const hls = new Hls({ enableWorker: false });
-        hlsRef.current = hls;
-        hls.loadSource(STREAM_URL);
-        hls.attachMedia(audio);
-        hls.on(Hls.Events.MANIFEST_PARSED, tryPlay);
-        hls.on(Hls.Events.ERROR, (_event, data) => {
-          console.warn("HLS error, falling back to direct:", data);
-          hls.destroy();
-          hlsRef.current = null;
-          // Fallback: direct URL
-          audio.src = STREAM_URL;
-          audio.load();
-          tryPlay();
-        });
-      } else {
-        // Direct playback (Safari native HLS or plain stream)
-        audio.src = STREAM_URL;
-        audio.load();
-        tryPlay();
-      }
+      // Direct MP3 stream playback
+      audio.src = STREAM_URL;
+      audio.load();
+      audio.play().then(() => {
+        setPlaying(true);
+        startAnalyser();
+      }).catch((err) => {
+        console.error("Play failed:", err);
+        setMetadata(prev => ({ ...prev, title: "Erro ao reproduzir", artist: "Verifique a conexão" }));
+      });
     }
   }, [playing, muted, startAnalyser, stopAnalyser]);
 
@@ -258,7 +231,7 @@ const WebRadio = () => {
           {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
         </button>
         <span className="text-[10px] font-display tracking-[0.2em] text-primary">
-          IGOR·FUNK·STATION
+          IGOR·FUCKN·STATION
         </span>
         <span className={`text-[9px] tracking-wider ${playing ? "text-neon-green" : "text-muted-foreground"}`}>
           {playing ? "NO AR" : "OFFLINE"}

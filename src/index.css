@@ -315,38 +315,37 @@
   background: hsl(190 100% 50% / 0.5);
 }
 
-/* Header shine sweep effect */
-.header-shine-word {
+/* Header diagonal shine sweep effect */
+.header-shine-container {
   position: relative;
   overflow: hidden;
+}
+
+.header-shine-container::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    hsla(0, 0%, 100%, 0.35) 45%,
+    hsla(0, 0%, 100%, 0.5) 50%,
+    hsla(0, 0%, 100%, 0.35) 55%,
+    transparent 70%
+  );
+  animation: diagonalShineSweep 2.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.header-shine-word {
   display: inline-block;
 }
 
-.header-shine-word::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 40%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    hsla(0, 0%, 100%, 0.4),
-    transparent
-  );
-  animation: shineSweep 3s ease-in-out infinite;
-}
-
-.header-shine-container .header-shine-word:nth-child(2)::after {
-  animation-delay: 0.4s;
-}
-
-.header-shine-container .header-shine-word:nth-child(3)::after {
-  animation-delay: 0.8s;
-}
-
-@keyframes shineSweep {
-  0%, 100% { left: -100%; }
-  50% { left: 200%; }
+@keyframes diagonalShineSweep {
+  0% { left: -100%; }
+  100% { left: 200%; }
 }
