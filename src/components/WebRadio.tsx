@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Volume2, VolumeX, Play, Pause, Radio, Music2 } from "lucide-react";
 import AudioVisualizer from "./radio/AudioVisualizer";
+import AlbumArtRings from "./radio/AlbumArtRings";
+import CyberPlayBtn from "./radio/CyberPlayBtn";
 
 export interface TrackInfo {
   title: string;
@@ -175,109 +177,97 @@ const WebRadio = () => {
   }, [muted]);
 
   const statusColor = playing ? "text-neon-green" : connecting ? "text-accent" : "text-muted-foreground";
-  const statusText = playing ? "ON AIR" : connecting ? "LINKING" : "OFFLINE";
+  const statusText = playing ? "NO AR" : connecting ? "CONECTANDO" : "OFFLINE";
 
   return (
-    <div className="flex flex-col h-full font-mono select-none">
+    <div className="flex flex-col h-full font-mono select-none overflow-hidden">
       <audio ref={audioRef} playsInline />
 
-      {/* === TOP: Album Art + Metadata === */}
-      <div className="relative flex items-center gap-2.5 p-2">
-        {/* Album art */}
-        <div className="relative shrink-0 w-14 h-14 rounded overflow-hidden border border-border/50"
-          style={{ boxShadow: playing ? "0 0 16px hsl(190 100% 50% / 0.25)" : "none" }}>
-          {metadata.albumArt ? (
-            <img src={metadata.albumArt} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-muted/40 flex items-center justify-center">
-              <Music2 className="w-5 h-5 text-muted-foreground/40" />
+      {/* === ALBUM ART — large, centered, with SVG rings === */}
+      <div className="flex flex-col items-center pt-3 pb-1 px-2">
+        <div className="relative">
+          <AlbumArtRings playing={playing} energy={energy} size={110} />
+          {/* Album art inside the rings */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="w-[70px] h-[70px] rounded-full overflow-hidden border border-border/40"
+              style={{
+                boxShadow: playing
+                  ? "0 0 20px hsl(190 100% 50% / 0.3), 0 0 40px hsl(190 100% 50% / 0.1)"
+                  : "0 0 8px hsl(0 0% 0% / 0.4)",
+              }}
+            >
+              {metadata.albumArt ? (
+                <img src={metadata.albumArt} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-muted/30 flex items-center justify-center">
+                  <Music2 className="w-6 h-6 text-muted-foreground/30" />
+                </div>
+              )}
             </div>
-          )}
-          {playing && (
-            <div className="absolute inset-0 border border-primary/30 rounded animate-pulse-glow pointer-events-none" />
-          )}
+          </div>
         </div>
 
-        {/* Metadata */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <Radio className={`w-2.5 h-2.5 shrink-0 ${statusColor}`} />
-            <span className={`text-[8px] tracking-[0.2em] uppercase font-display ${statusColor}`}>{statusText}</span>
-          </div>
-          <p className="text-[11px] text-foreground font-display truncate leading-tight">
-            {metadata.title}
-          </p>
-          <p className="text-[9px] text-muted-foreground truncate leading-tight mt-0.5">
-            {metadata.artist || "—"}
-          </p>
+        {/* Status badge */}
+        <div className="flex items-center gap-1.5 mt-2">
+          <Radio className={`w-2.5 h-2.5 ${statusColor}`} />
+          <span className={`text-[8px] tracking-[0.25em] uppercase font-display ${statusColor}`}>
+            {statusText}
+          </span>
         </div>
+
+        {/* Metadata below art */}
+        <p className="text-[11px] text-foreground font-display truncate leading-tight mt-1 max-w-full text-center">
+          {metadata.title}
+        </p>
+        <p className="text-[9px] text-muted-foreground truncate leading-tight mt-0.5 max-w-full text-center">
+          {metadata.artist || "—"}
+        </p>
       </div>
 
-      {/* === CONTROLS === */}
-      <div className="flex items-center gap-2 px-2 py-1.5 border-t border-border/30">
-        {/* Play/Pause */}
-        <button
-          onClick={togglePlay}
-          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all border"
-          style={{
-            borderColor: playing ? "hsl(190 100% 50% / 0.6)" : "hsl(190 100% 50% / 0.2)",
-            background: playing
-              ? "radial-gradient(circle, hsl(190 100% 50% / 0.15), hsl(230 25% 8%))"
-              : "hsl(230 25% 8%)",
-            boxShadow: playing ? "0 0 12px hsl(190 100% 50% / 0.2)" : "none",
-          }}
-          aria-label={playing ? "Pausar" : "Play"}
-        >
-          {playing ? (
-            <Pause className="w-3.5 h-3.5 text-primary" />
-          ) : (
-            <Play className="w-3.5 h-3.5 text-primary ml-0.5" />
-          )}
-        </button>
-
-        {/* Mute */}
+      {/* === CONTROLS: Play + Volume === */}
+      <div className="flex items-center justify-center gap-3 px-3 py-1.5 border-t border-border/20">
         <button onClick={toggleMute} className="text-muted-foreground hover:text-primary transition-colors shrink-0" aria-label="Mute">
-          {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+          {muted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
         </button>
 
-        {/* Volume slider */}
         <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
+          type="range" min={0} max={1} step={0.01}
           value={muted ? 0 : volume}
           onChange={handleVolume}
-          className="flex-1 h-1 appearance-none rounded-full cursor-pointer"
+          className="flex-1 h-1 appearance-none rounded-full cursor-pointer max-w-[60px]"
           style={{
             background: `linear-gradient(to right, hsl(190 100% 50%) ${(muted ? 0 : volume) * 100}%, hsl(230 20% 15%) ${(muted ? 0 : volume) * 100}%)`,
           }}
           aria-label="Volume"
         />
-        <span className="text-[8px] text-muted-foreground tabular-nums w-6 text-right shrink-0">
+
+        <CyberPlayBtn playing={playing} connecting={connecting} onClick={togglePlay} energy={energy} />
+
+        <span className="text-[7px] text-muted-foreground tabular-nums w-8 text-center shrink-0">
           {Math.round((muted ? 0 : volume) * 100)}%
         </span>
       </div>
 
       {/* === HISTORY === */}
-      <div className="border-t border-border/30 px-2 py-1 flex-1 min-h-0 overflow-y-auto">
-        <p className="text-[8px] text-muted-foreground tracking-[0.15em] uppercase mb-1">Histórico</p>
+      <div className="border-t border-border/20 px-2 py-1 flex-1 min-h-0 overflow-y-auto">
+        <p className="text-[7px] text-muted-foreground tracking-[0.2em] uppercase mb-0.5">Histórico</p>
         {history.length === 0 ? (
-          <p className="text-[9px] text-muted-foreground/40 text-center py-2">AGUARDANDO SINAL...</p>
+          <p className="text-[8px] text-muted-foreground/30 text-center py-1">AGUARDANDO SINAL...</p>
         ) : (
-          <div className="space-y-0.5">
+          <div className="space-y-px">
             {history.map((t, i) => (
-              <div key={t.timestamp} className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm text-[9px] ${i === 0 ? "bg-primary/10 border-l-2 border-primary" : "border-l-2 border-transparent opacity-50"}`}>
+              <div key={t.timestamp} className={`flex items-center gap-1.5 px-1 py-0.5 rounded-sm text-[8px] ${i === 0 ? "bg-primary/10 border-l-2 border-primary" : "border-l-2 border-transparent opacity-40"}`}>
                 {t.albumArt ? (
-                  <img src={t.albumArt} alt="" className="w-5 h-5 rounded-sm object-cover shrink-0" />
+                  <img src={t.albumArt} alt="" className="w-4 h-4 rounded-sm object-cover shrink-0" />
                 ) : (
-                  <div className="w-5 h-5 rounded-sm bg-muted/30 shrink-0" />
+                  <div className="w-4 h-4 rounded-sm bg-muted/20 shrink-0" />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-foreground truncate leading-tight">{t.title}</p>
-                  <p className="text-muted-foreground truncate leading-tight text-[8px]">{t.artist}</p>
+                  <p className="text-muted-foreground truncate leading-tight text-[7px]">{t.artist}</p>
                 </div>
-                {i === 0 && <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow shrink-0" />}
+                {i === 0 && <div className="w-1 h-1 rounded-full bg-primary animate-pulse-glow shrink-0" />}
               </div>
             ))}
           </div>
@@ -285,7 +275,7 @@ const WebRadio = () => {
       </div>
 
       {/* === VISUALIZER === */}
-      <div className="h-12 border-t border-border/30 shrink-0">
+      <div className="h-10 border-t border-border/20 shrink-0">
         <AudioVisualizer analyser={analyserRef.current} playing={playing} />
       </div>
     </div>
