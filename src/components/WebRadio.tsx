@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FILE_API_BASE_URL } from "@/config/api";
 import CoverFlowCarousel from "@/components/radio/CoverFlowCarousel";
+import CarouselErrorBoundary from "@/components/radio/CarouselErrorBoundary";
 
 const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
 const METADATA_URL = `${FILE_API_BASE_URL}/api/radio/now-playing`;
@@ -334,7 +335,7 @@ const WebRadio = () => {
       </div>
 
       {/* ══════════ MEIO: Visualizador de Espectro ══════════ */}
-      <div className="px-2 flex-1 min-h-0 flex items-end justify-center gap-[1.5px] py-2">
+      <div className="px-2 flex-1 min-h-[80px] flex items-end justify-center gap-[1.5px] py-2">
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
           const hue = 185 + (i / BAR_COUNT) * 135;
           return (
@@ -357,15 +358,17 @@ const WebRadio = () => {
       <div className="mx-2 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
 
       {/* ══════════ BASE: Carrossel 3D + Metadados ══════════ */}
-      <div className="px-2 pt-2 pb-1.5 flex flex-col items-center gap-2">
+      <div className="px-2 pt-2 pb-1.5 flex flex-col items-center gap-2 w-full min-h-[140px]">
         {/* Cover Flow 3D Carousel */}
-        <CoverFlowCarousel
-          currentCover={coverError ? "" : track.cover}
-          prevCover={track.coverPrev}
-          nextCover={track.coverNext}
-          playing={playing}
-          transitionKey={transitionKey}
-        />
+        <CarouselErrorBoundary>
+          <CoverFlowCarousel
+            currentCover={coverError ? "" : track.cover}
+            prevCover={track.coverPrev}
+            nextCover={track.coverNext}
+            playing={playing}
+            transitionKey={transitionKey}
+          />
+        </CarouselErrorBoundary>
 
         {/* Metadata + Mini visualizer */}
         <div className="flex items-center gap-2 w-full max-w-[220px]">
