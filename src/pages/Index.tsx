@@ -120,26 +120,32 @@ const Index = () => {
               <HudPanel title="Ferramentas">
                 <div className="flex flex-col gap-1.5">
                   <button
-                    onClick={() => setCalcOpen(true)}
-                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-sm transition-all duration-200
-                      border border-accent/20 bg-accent/5 backdrop-blur-sm
-                      hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_hsl(var(--accent)/0.15)]
-                      text-muted-foreground hover:text-foreground group"
+                    onClick={() => { setCalcOpen(v => !v); setNetworkOpen(false); }}
+                    className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-sm transition-all duration-200
+                      border backdrop-blur-sm group
+                      ${calcOpen
+                        ? "border-accent/60 bg-accent/15 text-foreground shadow-[0_0_12px_hsl(var(--accent)/0.2)]"
+                        : "border-accent/20 bg-accent/5 hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_hsl(var(--accent)/0.15)] text-muted-foreground hover:text-foreground"
+                      }`}
                   >
-                    <div className="w-7 h-7 rounded flex items-center justify-center border border-accent/30 bg-accent/10 group-hover:border-accent/60 group-hover:shadow-[0_0_8px_hsl(var(--accent)/0.3)] transition-all">
-                      <CalculatorIcon className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
+                    <div className={`w-7 h-7 rounded flex items-center justify-center border transition-all
+                      ${calcOpen ? "border-accent/60 bg-accent/20 shadow-[0_0_8px_hsl(var(--accent)/0.3)]" : "border-accent/30 bg-accent/10 group-hover:border-accent/60"}`}>
+                      <CalculatorIcon className={`w-4 h-4 transition-colors ${calcOpen ? "text-accent" : "text-accent/70 group-hover:text-accent"}`} />
                     </div>
                     <span className="text-[10px] tracking-[0.2em] font-display">CALCULADORA</span>
                   </button>
                   <button
-                    onClick={() => setNetworkOpen(true)}
-                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-sm transition-all duration-200
-                      border border-accent/20 bg-accent/5 backdrop-blur-sm
-                      hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_hsl(var(--accent)/0.15)]
-                      text-muted-foreground hover:text-foreground group"
+                    onClick={() => { setNetworkOpen(v => !v); setCalcOpen(false); }}
+                    className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-sm transition-all duration-200
+                      border backdrop-blur-sm group
+                      ${networkOpen
+                        ? "border-accent/60 bg-accent/15 text-foreground shadow-[0_0_12px_hsl(var(--accent)/0.2)]"
+                        : "border-accent/20 bg-accent/5 hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_hsl(var(--accent)/0.15)] text-muted-foreground hover:text-foreground"
+                      }`}
                   >
-                    <div className="w-7 h-7 rounded flex items-center justify-center border border-accent/30 bg-accent/10 group-hover:border-accent/60 group-hover:shadow-[0_0_8px_hsl(var(--accent)/0.3)] transition-all">
-                      <Wifi className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
+                    <div className={`w-7 h-7 rounded flex items-center justify-center border transition-all
+                      ${networkOpen ? "border-accent/60 bg-accent/20 shadow-[0_0_8px_hsl(var(--accent)/0.3)]" : "border-accent/30 bg-accent/10 group-hover:border-accent/60"}`}>
+                      <Wifi className={`w-4 h-4 transition-colors ${networkOpen ? "text-accent" : "text-accent/70 group-hover:text-accent"}`} />
                     </div>
                     <span className="text-[10px] tracking-[0.2em] font-display">IPS DA REDE</span>
                   </button>
@@ -199,6 +205,49 @@ const Index = () => {
           </div>
         </main>
 
+        {/* Floating Tool Panels — rendered outside overflow-hidden containers */}
+        <AnimatePresence>
+          {calcOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="fixed z-50 bottom-24 left-[26%] w-80"
+            >
+              <div className="hud-panel border-accent/40 bg-background/95 backdrop-blur-xl rounded-sm p-4 shadow-[0_0_30px_hsl(var(--accent)/0.2)]">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-display text-xs tracking-[0.25em] text-foreground text-glow uppercase">Calculadora</span>
+                  <button onClick={() => setCalcOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <Calculator />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {networkOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="fixed z-50 bottom-24 left-[26%] w-80"
+            >
+              <div className="hud-panel border-accent/40 bg-background/95 backdrop-blur-xl rounded-sm p-4 shadow-[0_0_30px_hsl(var(--accent)/0.2)]">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-display text-xs tracking-[0.25em] text-foreground text-glow uppercase">IPs da Rede</span>
+                  <button onClick={() => setNetworkOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <NetworkDeviceMonitor asContent />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Footer */}
         <footer className="border-t border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">
