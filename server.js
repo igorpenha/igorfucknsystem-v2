@@ -180,6 +180,33 @@ app.get("/api/radio/artwork", (_req, res) => {
   return res.status(404).json({ error: "Artwork not found" });
 });
 
+// ── GET /api/network/scan ─────────────────────────────────
+
+const { exec } = require("child_process");
+
+app.get("/api/network/scan", (_req, res) => {
+  exec("arp -a", (err, stdout) => {
+    if (err) {
+      console.error("ARP scan error:", err);
+      return res.status(500).json({ error: "Failed to run arp scan" });
+    }
+
+    const devices = [];
+    const lines = stdout.split("\n");
+    for (const line of lines) {
+      // Match patterns like: 192.168.0.1    00-aa-bb-cc-dd-ee   dynamic
+      const match = line.match(
+        /(\d+\.\d+\.\d+\.\d+)\s+([\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2})\s+(\w+)/
+      );
+      if (match) {
+        devices.push({ ip: match[1], mac: match[2], type: match[3] });
+      }
+    }
+
+    res.json({ devices });
+  });
+});
+
 // ── Start ────────────────────────────────────────────────
 
 app.listen(PORT, () => {
