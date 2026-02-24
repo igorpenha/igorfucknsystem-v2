@@ -1,8 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, VolumeX, Play, Pause } from "lucide-react";
+import { FILE_API_BASE_URL } from "@/config/api";
 
 const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
+const METADATA_URL = `${FILE_API_BASE_URL}/api/radio/now-playing`;
+const METADATA_INTERVAL = 10_000;
 const BAR_COUNT = 32;
 
 const WebRadio = () => {
@@ -19,12 +22,45 @@ const WebRadio = () => {
 
   const [track, setTrack] = useState({
     title: "Aguardando sinal...",
-    artist: "---",
-    album: "---",
+    artist: "SCANNING...",
+    album: "NO_DATA",
     cover: "",
   });
 
-  // Real Web Audio API analyser
+  // ── Metadata polling ──
+  useEffect(() => {
+    if (!playing) return;
+    let active = true;
+
+    const fetchMeta = async () => {
+      try {
+        const res = await fetch(METADATA_URL);
+        if (!res.ok) throw new Error("metadata fetch failed");
+        const data = await res.json();
+        if (active) {
+          setTrack({
+            title: data.title || "LIVE BROADCAST",
+            artist: data.artist || "SCANNING...",
+            album: data.album || "NO_DATA",
+            cover: data.coverUrl || "",
+          });
+        }
+      } catch {
+        if (active) {
+          setTrack(t => ({
+            ...t,
+            title: t.title === "Conectando..." ? "LIVE BROADCAST" : t.title,
+          }));
+        }
+      }
+    };
+
+    fetchMeta();
+    const id = setInterval(fetchMeta, METADATA_INTERVAL);
+    return () => { active = false; clearInterval(id); };
+  }, [playing]);
+
+  // ── Real Web Audio API analyser (refined) ──
   const startAnalyser = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -39,7 +75,7 @@ const WebRadio = () => {
       if (!analyserRef.current) {
         const analyser = ctx.createAnalyser();
         analyser.fftSize = 64;
-        analyser.smoothingTimeConstant = 0.5;
+        analyser.smoothingTimeConstant = 0.85;
         sourceRef.current.connect(analyser);
         analyser.connect(ctx.destination);
         analyserRef.current = analyser;
@@ -54,13 +90,20 @@ const WebRadio = () => {
         for (let i = 0; i < BAR_COUNT; i++) {
           const bar = barsRef.current[i];
           if (!bar) continue;
-          const val = dataArray[i] / 255;
+
+          // Logarithmic boost for higher frequencies
+          const boost = 1 + Math.log2(1 + i) * 0.25;
+          const raw = Math.min((dataArray[i] / 255) * boost, 1);
+          const val = Math.pow(raw, 0.85); // slight compression for fullness
+
           const h = Math.max(val * 100, 1.5);
           const hue = 185 + (i / BAR_COUNT) * 135;
+          const glow = val * val; // quadratic glow intensity
+
           bar.style.height = `${h}%`;
-          bar.style.background = `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.08), hsla(${hue}, 100%, 55%, ${0.35 + val * 0.65}))`;
-          bar.style.boxShadow = val > 0.35
-            ? `0 0 ${val * 10}px hsla(${hue}, 100%, 50%, ${val * 0.4})`
+          bar.style.background = `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.08), hsla(${hue}, 100%, 55%, ${0.3 + val * 0.7}))`;
+          bar.style.boxShadow = val > 0.2
+            ? `0 0 ${4 + glow * 14}px hsla(${hue}, 100%, 55%, ${0.15 + glow * 0.55}), 0 0 ${2 + glow * 6}px hsla(${hue}, 100%, 70%, ${glow * 0.4})`
             : "none";
         }
         frameRef.current = requestAnimationFrame(tick);
@@ -100,7 +143,6 @@ const WebRadio = () => {
       setConnecting(false);
       setPlaying(true);
       startAnalyser();
-      setTrack(t => ({ ...t, title: t.title === "Aguardando sinal..." || t.title === "Conectando..." ? "LIVE BROADCAST" : t.title }));
     };
     const onPause = () => { setPlaying(false); setConnecting(false); stopAnalyser(); };
     const onError = () => { setConnecting(false); setPlaying(false); stopAnalyser(); };
