@@ -8,6 +8,7 @@ import HudPanel from "@/components/HudPanel";
 import TypingText from "@/components/TypingText";
 import Calculator from "@/components/Calculator";
 import NetworkDeviceMonitor from "@/components/NetworkDeviceMonitor";
+import ToolProjection from "@/components/ToolProjection";
 import WebRadio from "@/components/WebRadio";
 import InfoWidgets from "@/components/InfoWidgets";
 import SecurityCameraPanel from "@/components/SecurityCameraPanel";
@@ -17,7 +18,7 @@ import SpaceBackground from "@/components/SpaceBackground";
 import { AnimatePresence } from "framer-motion";
 import { fetchFiles, type FsEntry } from "@/services/fileSystemApi";
 import { toast } from "sonner";
-import { CalculatorIcon, Wifi, X } from "lucide-react";
+import { CalculatorIcon, Wifi } from "lucide-react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -205,47 +206,17 @@ const Index = () => {
           </div>
         </main>
 
-        {/* Floating Tool Panels — rendered outside overflow-hidden containers */}
+        {/* Central Projection Zone — tools pop-out from bottom-left to center */}
         <AnimatePresence>
           {calcOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 20 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="fixed z-50 bottom-24 left-[26%] w-80"
-            >
-              <div className="hud-panel border-accent/40 bg-background/95 backdrop-blur-xl rounded-sm p-4 shadow-[0_0_30px_hsl(var(--accent)/0.2)]">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-display text-xs tracking-[0.25em] text-foreground text-glow uppercase">Calculadora</span>
-                  <button onClick={() => setCalcOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <Calculator />
-              </div>
-            </motion.div>
+            <ToolProjection title="Calculadora" onClose={() => setCalcOpen(false)}>
+              <Calculator />
+            </ToolProjection>
           )}
-        </AnimatePresence>
-        <AnimatePresence>
           {networkOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 20 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="fixed z-50 bottom-24 left-[26%] w-80"
-            >
-              <div className="hud-panel border-accent/40 bg-background/95 backdrop-blur-xl rounded-sm p-4 shadow-[0_0_30px_hsl(var(--accent)/0.2)]">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-display text-xs tracking-[0.25em] text-foreground text-glow uppercase">IPs da Rede</span>
-                  <button onClick={() => setNetworkOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <NetworkDeviceMonitor asContent />
-              </div>
-            </motion.div>
+            <ToolProjection title="IPs da Rede" onClose={() => setNetworkOpen(false)}>
+              <NetworkDeviceMonitor asContent />
+            </ToolProjection>
           )}
         </AnimatePresence>
 
