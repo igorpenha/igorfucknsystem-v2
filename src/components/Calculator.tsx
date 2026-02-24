@@ -38,11 +38,11 @@ const Calculator = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="bg-muted rounded-sm px-3 py-2 text-right font-display text-xl text-foreground text-glow border border-border">
+    <div className="flex flex-col gap-3">
+      <div className="bg-muted rounded-sm px-4 py-3 text-right font-display text-2xl text-foreground text-glow border border-border">
         {display}
       </div>
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-4 gap-2">
         {buttons.flat().map((btn) => (
           <button
             key={btn}
@@ -53,7 +53,7 @@ const Calculator = () => {
               else handleNumber(btn);
             }}
             className={`
-              py-2 rounded-sm font-display text-sm transition-all duration-150
+              py-3 rounded-sm font-display text-base transition-all duration-150
               active:scale-95
               hover:shadow-[0_0_12px_hsl(50,100%,50%/0.4)] hover:border-accent
               glitch-hover
