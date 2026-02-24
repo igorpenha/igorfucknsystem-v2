@@ -35,14 +35,14 @@ const CoverFlowCarousel = ({
   };
 
   return (
-    <div className="flex items-center justify-center w-full px-1" style={{ height: 110 }}>
+    <div className="flex items-center justify-between w-full px-0" style={{ height: 110 }}>
       {/* Previous — small, pushed left */}
       <div
         className="overflow-hidden border border-border/30 transition-all duration-500 shrink-0"
         style={{
-          width: 56,
-          height: 56,
-          opacity: 0.45,
+          width: 60,
+          height: 60,
+          opacity: 0.5,
           clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)",
         }}
       >
@@ -85,9 +85,9 @@ const CoverFlowCarousel = ({
       <div
         className="overflow-hidden border border-border/30 transition-all duration-500 shrink-0"
         style={{
-          width: 56,
-          height: 56,
-          opacity: 0.45,
+          width: 60,
+          height: 60,
+          opacity: 0.5,
           clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)",
         }}
       >
