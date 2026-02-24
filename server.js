@@ -165,20 +165,34 @@ app.get("/api/radio/now-playing", async (_req, res) => {
   }
 });
 
-// ── GET /api/radio/artwork ───────────────────────────────
+// ── Artwork helper ───────────────────────────────────────
 
-app.get("/api/radio/artwork", (_req, res) => {
-  const pngPath = path.join(RADIO_DATA_DIR, "artwork.png");
-  const jpgPath = path.join(RADIO_DATA_DIR, "artwork.jpg");
+function serveArtwork(baseName, _req, res) {
+  const pngPath = path.join(RADIO_DATA_DIR, `${baseName}.png`);
+  const jpgPath = path.join(RADIO_DATA_DIR, `${baseName}.jpg`);
 
-  if (fsSync.existsSync(pngPath)) {
-    return res.sendFile(pngPath);
+  if (fsSync.existsSync(pngPath)) return res.sendFile(pngPath);
+  if (fsSync.existsSync(jpgPath)) return res.sendFile(jpgPath);
+
+  // fallback: serve main artwork if prev/next don't exist yet
+  if (baseName !== "artwork") {
+    const fallbackPng = path.join(RADIO_DATA_DIR, "artwork.png");
+    const fallbackJpg = path.join(RADIO_DATA_DIR, "artwork.jpg");
+    if (fsSync.existsSync(fallbackPng)) return res.sendFile(fallbackPng);
+    if (fsSync.existsSync(fallbackJpg)) return res.sendFile(fallbackJpg);
   }
-  if (fsSync.existsSync(jpgPath)) {
-    return res.sendFile(jpgPath);
-  }
+
   return res.status(404).json({ error: "Artwork not found" });
-});
+}
+
+// ── GET /api/radio/artwork ───────────────────────────────
+app.get("/api/radio/artwork", (req, res) => serveArtwork("artwork", req, res));
+
+// ── GET /api/radio/artwork-prev ──────────────────────────
+app.get("/api/radio/artwork-prev", (req, res) => serveArtwork("artwork_prev", req, res));
+
+// ── GET /api/radio/artwork-next ──────────────────────────
+app.get("/api/radio/artwork-next", (req, res) => serveArtwork("artwork_next", req, res));
 
 // ── GET /api/network/scan ─────────────────────────────────
 

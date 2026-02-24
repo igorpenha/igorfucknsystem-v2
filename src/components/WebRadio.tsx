@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FILE_API_BASE_URL } from "@/config/api";
+import CoverFlowCarousel from "@/components/radio/CoverFlowCarousel";
 
 const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
 const METADATA_URL = `${FILE_API_BASE_URL}/api/radio/now-playing`;
@@ -96,8 +97,12 @@ const WebRadio = () => {
     artist: "SCANNING...",
     album: "NO_DATA",
     cover: "",
+    coverPrev: "",
+    coverNext: "",
   });
   const [coverError, setCoverError] = useState(false);
+  const [transitionKey, setTransitionKey] = useState(0);
+  const lastTrackRef = useRef("");
 
   // ── Metadata polling ──
   useEffect(() => {
@@ -109,15 +114,26 @@ const WebRadio = () => {
         if (!res.ok) throw new Error("metadata fetch failed");
         const data = await res.json();
         if (active) {
-          const newCover = `${FILE_API_BASE_URL}/api/radio/artwork?t=${Date.now()}`;
+          const ts = Date.now();
+          const newCover = `${FILE_API_BASE_URL}/api/radio/artwork?t=${ts}`;
+          const newCoverPrev = `${FILE_API_BASE_URL}/api/radio/artwork-prev?t=${ts}`;
+          const newCoverNext = `${FILE_API_BASE_URL}/api/radio/artwork-next?t=${ts}`;
+          const trackId = `${data.artist}-${data.title}`;
           console.log("URL da Capa:", newCover);
           setTrack(prev => {
             if (prev.cover !== newCover) setCoverError(false);
+            // Trigger carousel transition when track changes
+            if (lastTrackRef.current && lastTrackRef.current !== trackId) {
+              setTransitionKey(k => k + 1);
+            }
+            lastTrackRef.current = trackId;
             return {
               title: data.title || "LIVE BROADCAST",
               artist: data.artist || "SCANNING...",
               album: data.album || "NO_DATA",
               cover: newCover,
+              coverPrev: newCoverPrev,
+              coverNext: newCoverNext,
             };
           });
         }
@@ -340,40 +356,16 @@ const WebRadio = () => {
       {/* ── Linha divisória ── */}
       <div className="mx-2 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
 
-      {/* ══════════ BASE: Capa + Metadados ══════════ */}
+      {/* ══════════ BASE: Carrossel 3D + Metadados ══════════ */}
       <div className="px-2 pt-2 pb-1.5 flex flex-col items-center gap-2">
-        {/* Album Art (destaque maior) */}
-        <div
-          className="w-28 h-28 shrink-0 border overflow-hidden flex items-center justify-center"
-          style={{
-            borderColor: playing ? "hsl(var(--primary))" : "hsl(var(--border))",
-            boxShadow: playing
-              ? "0 0 20px hsl(var(--primary) / 0.3), 0 0 40px hsl(var(--primary) / 0.1), inset 0 0 12px hsl(var(--primary) / 0.1)"
-              : "none",
-            background: "hsl(var(--muted) / 0.15)",
-            clipPath: "polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%)",
-            transition: "border-color 0.3s, box-shadow 0.3s",
-          }}
-        >
-          {track.cover && !coverError ? (
-            <img
-              src={track.cover}
-              alt="Album cover"
-              className="w-full h-full object-cover min-w-[112px] min-h-[112px]"
-              onError={() => setCoverError(true)}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-1">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="opacity-20">
-                <circle cx="12" cy="12" r="10" stroke="hsl(var(--primary))" strokeWidth="1" />
-                <circle cx="12" cy="12" r="3" stroke="hsl(var(--primary))" strokeWidth="1" />
-                <line x1="12" y1="2" x2="12" y2="9" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.5" />
-                <line x1="12" y1="15" x2="12" y2="22" stroke="hsl(var(--primary))" strokeWidth="0.5" opacity="0.5" />
-              </svg>
-              <span className="text-[6px] text-muted-foreground/20 tracking-[0.3em]">NO SIGNAL</span>
-            </div>
-          )}
-        </div>
+        {/* Cover Flow 3D Carousel */}
+        <CoverFlowCarousel
+          currentCover={coverError ? "" : track.cover}
+          prevCover={track.coverPrev}
+          nextCover={track.coverNext}
+          playing={playing}
+          transitionKey={transitionKey}
+        />
 
         {/* Metadata + Mini visualizer */}
         <div className="flex items-center gap-2 w-full max-w-[220px]">
