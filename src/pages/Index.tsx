@@ -17,7 +17,7 @@ import SpaceBackground from "@/components/SpaceBackground";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fetchFiles, type FsEntry } from "@/services/fileSystemApi";
 import { toast } from "sonner";
-import { CalculatorIcon, Wifi, ChevronRight } from "lucide-react";
+import { CalculatorIcon, Wifi } from "lucide-react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -115,30 +115,36 @@ const Index = () => {
               </HudPanel>
             </motion.div>
 
-            {/* Tool Corner — drawer-style buttons */}
-            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0 flex flex-col gap-1.5">
-              <button
-                onClick={() => setCalcOpen(true)}
-                className="hud-panel flex items-center gap-2.5 px-3 py-2 rounded-sm text-left transition-all duration-200 w-full
-                  hover:border-primary/20 hover:bg-primary/5 text-muted-foreground hover:text-foreground"
-              >
-                <div className="w-6 h-6 rounded-sm flex items-center justify-center border border-secondary/20 bg-secondary/5">
-                  <CalculatorIcon className="w-3.5 h-3.5 text-secondary/60" />
+            {/* Tool Corner */}
+            <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
+              <HudPanel title="Ferramentas">
+                <div className="flex flex-col gap-1.5">
+                  <button
+                    onClick={() => setCalcOpen(true)}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-sm transition-all duration-200
+                      border border-accent/20 bg-accent/5 backdrop-blur-sm
+                      hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_hsl(var(--accent)/0.15)]
+                      text-muted-foreground hover:text-foreground group"
+                  >
+                    <div className="w-7 h-7 rounded flex items-center justify-center border border-accent/30 bg-accent/10 group-hover:border-accent/60 group-hover:shadow-[0_0_8px_hsl(var(--accent)/0.3)] transition-all">
+                      <CalculatorIcon className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
+                    </div>
+                    <span className="text-[10px] tracking-[0.2em] font-display">CALCULADORA</span>
+                  </button>
+                  <button
+                    onClick={() => setNetworkOpen(true)}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-sm transition-all duration-200
+                      border border-accent/20 bg-accent/5 backdrop-blur-sm
+                      hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_15px_hsl(var(--accent)/0.15)]
+                      text-muted-foreground hover:text-foreground group"
+                  >
+                    <div className="w-7 h-7 rounded flex items-center justify-center border border-accent/30 bg-accent/10 group-hover:border-accent/60 group-hover:shadow-[0_0_8px_hsl(var(--accent)/0.3)] transition-all">
+                      <Wifi className="w-4 h-4 text-accent/70 group-hover:text-accent transition-colors" />
+                    </div>
+                    <span className="text-[10px] tracking-[0.2em] font-display">IPS DA REDE</span>
+                  </button>
                 </div>
-                <span className="text-[10px] tracking-wider font-display flex-1">CALCULADORA</span>
-                <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
-              </button>
-              <button
-                onClick={() => setNetworkOpen(true)}
-                className="hud-panel flex items-center gap-2.5 px-3 py-2 rounded-sm text-left transition-all duration-200 w-full
-                  hover:border-primary/20 hover:bg-primary/5 text-muted-foreground hover:text-foreground"
-              >
-                <div className="w-6 h-6 rounded-sm flex items-center justify-center border border-secondary/20 bg-secondary/5">
-                  <Wifi className="w-3.5 h-3.5 text-secondary/60" />
-                </div>
-                <span className="text-[10px] tracking-wider font-display flex-1">IPS DA REDE</span>
-                <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
-              </button>
+              </HudPanel>
             </motion.div>
           </div>
 
