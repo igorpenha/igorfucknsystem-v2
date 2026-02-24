@@ -81,7 +81,7 @@ const Index = () => {
         const calcRect = calcRef.current.getBoundingClientRect();
         const viewerTop = fileViewerRef.current.getBoundingClientRect().top;
         // Align file viewer bottom with ~1 button row above calculator bottom (top of + button)
-        const oneRowH = 44; // approximate button row height
+        const oneRowH = 88; // approximate 2 button rows height
         const h = calcRect.bottom - viewerTop - oneRowH;
         if (h > 80) setFileViewerH(h);
       }
