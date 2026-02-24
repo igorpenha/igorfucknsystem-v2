@@ -79,8 +79,8 @@ const FileViewer = ({ folderName, files, totalSize, onFolderClick, onBack }: Fil
               <div
                 key={file.name}
                 onClick={() => isFolder && onFolderClick(file.name)}
-                className={`flex items-center gap-3 py-2 px-3 rounded-sm group transition-all duration-200 border border-transparent
-                  hover:shadow-[0_0_10px_hsl(50,100%,50%/0.2)] hover:border-accent/40 glitch-hover
+                className={`flex items-center gap-3 py-2 px-3 rounded-sm group transition-all duration-300 border border-transparent
+                  hover:border-accent/30 hover:shadow-[0_0_8px_hsl(var(--accent)/0.15),0_0_20px_hsl(var(--accent)/0.08)] hover:animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]
                   ${isFolder ? "cursor-pointer hover:bg-primary/10" : "hover:bg-muted/20"}`}
               >
                 {isFolder ? (
