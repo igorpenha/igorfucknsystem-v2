@@ -18,6 +18,56 @@ const Placeholder = () => (
   </div>
 );
 
+/* Side cover with reflection */
+const SideCover = ({
+  src,
+  alt,
+  hasError,
+  onError,
+}: {
+  src: string;
+  alt: string;
+  hasError: boolean;
+  onError: () => void;
+}) => (
+  <div className="flex flex-col items-center">
+    <div
+      className="overflow-hidden border border-border/30 transition-all duration-500 shrink-0"
+      style={{
+        width: 56,
+        height: 56,
+        opacity: 0.5,
+        clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)",
+      }}
+    >
+      {src && !hasError ? (
+        <img src={src} alt={alt} className="w-full h-full object-cover" onError={onError} />
+      ) : (
+        <Placeholder />
+      )}
+    </div>
+    {/* Reflection */}
+    <div
+      className="overflow-hidden shrink-0 pointer-events-none"
+      style={{
+        width: 56,
+        height: 28,
+        opacity: 0.25,
+        transform: "scaleY(-1)",
+        maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 80%)",
+        WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 80%)",
+        clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)",
+      }}
+    >
+      {src && !hasError ? (
+        <img src={src} alt="" className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full bg-muted/10" />
+      )}
+    </div>
+  </div>
+);
+
 const CoverFlowCarousel = ({
   currentCover,
   prevCover,
@@ -35,71 +85,100 @@ const CoverFlowCarousel = ({
   };
 
   return (
-    <div className="flex items-center w-full px-0" style={{ height: 130 }}>
-      {/* Previous — centered between left edge and center cover */}
+    <div className="flex items-center w-full px-0" style={{ height: 160 }}>
+      {/* Previous */}
       <div className="flex-1 flex items-center justify-center">
-        <div
-          className="overflow-hidden border border-border/30 transition-all duration-500 shrink-0"
-          style={{
-            width: 56,
-            height: 56,
-            opacity: 0.5,
-            clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)",
-          }}
-        >
-          {prevCover && !errors.prev ? (
-            <img src={prevCover} alt="Previous" className="w-full h-full object-cover" onError={() => handleError("prev")} />
-          ) : (
-            <Placeholder />
-          )}
-        </div>
+        <SideCover src={prevCover} alt="Previous" hasError={!!errors.prev} onError={() => handleError("prev")} />
       </div>
 
-      {/* Current — dominant center, larger */}
-      <div
-        className="overflow-hidden relative transition-all duration-500 shrink-0"
-        style={{
-          width: 120,
-          height: 120,
-          clipPath: "polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%)",
-          border: `2px solid ${playing ? "hsl(var(--primary))" : "hsl(var(--border))"}`,
-          boxShadow: playing
-            ? "0 0 24px hsl(var(--primary) / 0.45), 0 0 48px hsl(var(--primary) / 0.15)"
-            : "0 4px 16px hsl(0 0% 0% / 0.4)",
-        }}
-      >
-        {currentCover && !errors.current ? (
-          <img src={currentCover} alt="Now playing" className="w-full h-full object-cover" onError={() => handleError("current")} />
-        ) : (
-          <Placeholder />
-        )}
-        {playing && (
+      {/* Current — glass encapsulation */}
+      <div className="flex flex-col items-center shrink-0">
+        <div
+          className="relative transition-all duration-500"
+          style={{
+            width: 124,
+            height: 124,
+          }}
+        >
+          {/* Outer glow layers */}
           <div
-            className="absolute inset-0 pointer-events-none animate-[scanLine_2.5s_linear_infinite]"
+            className="absolute -inset-[3px] rounded-[2px] pointer-events-none"
             style={{
-              background: "linear-gradient(180deg, transparent 0%, hsl(var(--primary) / 0.06) 48%, hsl(var(--primary) / 0.15) 50%, hsl(var(--primary) / 0.06) 52%, transparent 100%)",
+              background: playing
+                ? "linear-gradient(135deg, hsl(var(--primary) / 0.3), transparent 40%, transparent 60%, hsl(var(--primary) / 0.2))"
+                : "linear-gradient(135deg, hsl(var(--border) / 0.4), transparent 40%, transparent 60%, hsl(var(--border) / 0.3))",
+              boxShadow: playing
+                ? "0 0 30px hsl(var(--primary) / 0.3), 0 0 60px hsl(var(--primary) / 0.1), inset 0 0 20px hsl(var(--primary) / 0.1)"
+                : "0 4px 20px hsl(0 0% 0% / 0.5), inset 0 0 10px hsl(0 0% 100% / 0.03)",
             }}
           />
-        )}
-      </div>
+          {/* Main cover container */}
+          <div
+            className="absolute inset-0 overflow-hidden"
+            style={{
+              clipPath: "polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%)",
+              boxShadow: playing
+                ? "inset 0 1px 0 hsl(0 0% 100% / 0.12), inset 0 -1px 0 hsl(0 0% 0% / 0.3), inset 1px 0 0 hsl(0 0% 100% / 0.06), inset -1px 0 0 hsl(0 0% 100% / 0.06), 0 8px 32px hsl(0 0% 0% / 0.6), 0 2px 8px hsl(var(--primary) / 0.2)"
+                : "inset 0 1px 0 hsl(0 0% 100% / 0.08), inset 0 -1px 0 hsl(0 0% 0% / 0.3), 0 8px 32px hsl(0 0% 0% / 0.6)",
+            }}
+          >
+            {currentCover && !errors.current ? (
+              <img src={currentCover} alt="Now playing" className="w-full h-full object-cover" onError={() => handleError("current")} />
+            ) : (
+              <Placeholder />
+            )}
+            {/* Specular highlight overlay */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: "linear-gradient(135deg, hsl(0 0% 100% / 0.12) 0%, transparent 40%, transparent 70%, hsl(0 0% 100% / 0.04) 100%)",
+              }}
+            />
+            {/* Scan line when playing */}
+            {playing && (
+              <div
+                className="absolute inset-0 pointer-events-none animate-[scanLine_2.5s_linear_infinite]"
+                style={{
+                  background: "linear-gradient(180deg, transparent 0%, hsl(var(--primary) / 0.06) 48%, hsl(var(--primary) / 0.15) 50%, hsl(var(--primary) / 0.06) 52%, transparent 100%)",
+                }}
+              />
+            )}
+          </div>
+          {/* Edge bevel highlights */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              clipPath: "polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%)",
+              border: "1px solid hsl(0 0% 100% / 0.08)",
+              boxShadow: "inset 0 0 1px hsl(0 0% 100% / 0.1)",
+            }}
+          />
+        </div>
 
-      {/* Next — centered between center cover and right edge */}
-      <div className="flex-1 flex items-center justify-center">
+        {/* Main cover reflection */}
         <div
-          className="overflow-hidden border border-border/30 transition-all duration-500 shrink-0"
+          className="overflow-hidden shrink-0 pointer-events-none"
           style={{
-            width: 56,
-            height: 56,
-            opacity: 0.5,
-            clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)",
+            width: 120,
+            height: 50,
+            opacity: 0.2,
+            transform: "scaleY(-1)",
+            maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 70%)",
+            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 70%)",
+            clipPath: "polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%)",
           }}
         >
-          {nextCover && !errors.next ? (
-            <img src={nextCover} alt="Next" className="w-full h-full object-cover" onError={() => handleError("next")} />
+          {currentCover && !errors.current ? (
+            <img src={currentCover} alt="" className="w-full h-full object-cover" />
           ) : (
-            <Placeholder />
+            <div className="w-full h-full bg-muted/10" />
           )}
         </div>
+      </div>
+
+      {/* Next */}
+      <div className="flex-1 flex items-center justify-center">
+        <SideCover src={nextCover} alt="Next" hasError={!!errors.next} onError={() => handleError("next")} />
       </div>
 
       <style>{`
