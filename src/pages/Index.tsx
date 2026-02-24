@@ -78,9 +78,11 @@ const Index = () => {
   useEffect(() => {
     const sync = () => {
       if (calcRef.current && fileViewerRef.current) {
-        const calcBottom = calcRef.current.getBoundingClientRect().bottom;
+        const calcRect = calcRef.current.getBoundingClientRect();
         const viewerTop = fileViewerRef.current.getBoundingClientRect().top;
-        const h = calcBottom - viewerTop;
+        // Align file viewer bottom with top of last button row (~20% from calc bottom)
+        const lastRowOffset = calcRect.height * 0.2;
+        const h = calcRect.bottom - viewerTop - lastRowOffset;
         if (h > 80) setFileViewerH(h);
       }
       // Camera panel: align bottom with left column bottom
@@ -108,8 +110,10 @@ const Index = () => {
           <div className="flex items-center gap-4">
             <HeaderGlitchLogo />
             <div>
-              <h1 className="font-display text-sm md:text-base text-foreground text-glow tracking-[0.2em]">
-                IGOR FUNK SYSTEM
+              <h1 className="font-display text-sm md:text-base tracking-[0.2em] flex gap-2 items-center header-shine-container">
+                <span className="header-shine-word" style={{ color: "hsl(50 100% 55%)", textShadow: "0 0 8px hsl(50 100% 50% / 0.5)" }}>IGOR</span>
+                <span className="header-shine-word" style={{ color: "hsl(320 100% 55%)", textShadow: "0 0 8px hsl(320 100% 50% / 0.5)" }}>FUCKN</span>
+                <span className="header-shine-word" style={{ color: "hsl(190 100% 55%)", textShadow: "0 0 8px hsl(190 100% 50% / 0.5)" }}>SYSTEM</span>
               </h1>
               <p className="text-[10px] text-muted-foreground tracking-widest">
                 <TypingText text="SISTEMA DE GERENCIAMENTO // v2.0" speed={30} />
@@ -185,14 +189,14 @@ const Index = () => {
           </div>
 
           {/* Right Column */}
-          <div className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
-            <motion.div ref={webRadioRef} custom={1} initial="hidden" animate="visible" variants={fadeUp}>
-              <HudPanel title="WebRadio">
+          <div className="lg:col-span-3 min-h-0 grid grid-rows-[minmax(0,1fr)_auto] gap-3 overflow-hidden">
+            <motion.div ref={webRadioRef} custom={1} initial="hidden" animate="visible" variants={fadeUp} className="min-h-0 overflow-hidden">
+              <HudPanel title="WebRadio" className="h-full overflow-hidden flex flex-col">
                 <WebRadio />
               </HudPanel>
             </motion.div>
 
-            <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp}>
+            <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
               <HudPanel title="Info do Sistema">
                 <InfoWidgets />
               </HudPanel>
@@ -203,7 +207,7 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="border-t border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">
-          <span className="text-[10px] text-muted-foreground tracking-widest">© 2026 IGOR FUNK SYSTEM</span>
+          <span className="text-[10px] text-muted-foreground tracking-widest">© 2026 IGOR FUCKN SYSTEM</span>
           <span className="text-[10px] text-muted-foreground tracking-widest">BUILD 2.0.0 // ALL SYSTEMS NOMINAL</span>
         </footer>
       </div>
