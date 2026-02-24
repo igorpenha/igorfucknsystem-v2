@@ -314,3 +314,39 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(190 100% 50% / 0.5);
 }
+
+/* Header shine sweep effect */
+.header-shine-word {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.header-shine-word::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsla(0, 0%, 100%, 0.4),
+    transparent
+  );
+  animation: shineSweep 3s ease-in-out infinite;
+}
+
+.header-shine-container .header-shine-word:nth-child(2)::after {
+  animation-delay: 0.4s;
+}
+
+.header-shine-container .header-shine-word:nth-child(3)::after {
+  animation-delay: 0.8s;
+}
+
+@keyframes shineSweep {
+  0%, 100% { left: -100%; }
+  50% { left: 200%; }
+}

@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import logoImage from "@/assets/logo-new.png";
 
 const LOADING_DURATION = 6000;
 
-// Holographic ring - centered on the circular part of the logo
 const HoloRing = ({ radius, delay, color, reverse }: { radius: number; delay: number; color: string; reverse?: boolean }) => (
   <motion.circle
     cx="250"
@@ -24,7 +23,6 @@ const HoloRing = ({ radius, delay, color, reverse }: { radius: number; delay: nu
   />
 );
 
-// Digital noise canvas effect
 const DigitalNoise = ({ active }: { active: boolean }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -62,15 +60,35 @@ const DigitalNoise = ({ active }: { active: boolean }) => {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-40 pointer-events-none mix-blend-screen" />;
 };
 
+// TV shutdown effect component
+const TVShutdown = ({ active }: { active: boolean }) => {
+  if (!active) return null;
+  return (
+    <motion.div
+      className="absolute inset-0 z-30 pointer-events-none"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.1 }}
+    >
+      {/* White flash */}
+      <motion.div
+        className="absolute inset-0"
+        style={{ background: "white" }}
+        initial={{ opacity: 0.8 }}
+        animate={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+      />
+    </motion.div>
+  );
+};
 
 const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<"boot" | "reveal" | "pulse" | "done">("boot");
+  const [phase, setPhase] = useState<"boot" | "reveal" | "pulse" | "tvoff" | "done">("boot");
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-
-  // Boot sound - synthesized
+  // Boot sound
   useEffect(() => {
     try {
       const ac = new AudioContext();
@@ -118,9 +136,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     } catch {}
   }, []);
 
-  // (exit sound removed)
-
-  // Progress sound + timer
+  // Progress timer
   useEffect(() => {
     let ac: AudioContext | null = null;
     let osc: OscillatorNode | null = null;
@@ -157,12 +173,8 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
       const p = Math.min((Date.now() - start) / LOADING_DURATION, 1);
       setProgress(p);
 
-      if (osc && ac) {
-        osc.frequency.setValueAtTime(100 + p * 400, ac.currentTime);
-      }
-      if (gain && ac) {
-        gain.gain.setValueAtTime(0.04 * (1 - p * 0.5), ac.currentTime);
-      }
+      if (osc && ac) osc.frequency.setValueAtTime(100 + p * 400, ac.currentTime);
+      if (gain && ac) gain.gain.setValueAtTime(0.04 * (1 - p * 0.5), ac.currentTime);
 
       if (p < 1) {
         requestAnimationFrame(tick);
@@ -171,8 +183,12 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
         if (tickGain && ac) tickGain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.2);
         setTimeout(() => { osc?.stop(); tickOsc?.stop(); }, 400);
 
-        setPhase("done");
-        setTimeout(() => onCompleteRef.current(), 400);
+        // Trigger TV-off phase
+        setPhase("tvoff");
+        setTimeout(() => {
+          setPhase("done");
+          setTimeout(() => onCompleteRef.current(), 200);
+        }, 600);
       }
     };
     requestAnimationFrame(tick);
@@ -197,8 +213,17 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   const isBoot = phase === "boot";
   const isReveal = phase === "reveal";
   const isPulse = phase === "pulse";
-  
+  const isTvOff = phase === "tvoff";
 
+  // Progressive shake: intensity scales with progress
+  // 0-30% = subtle, 30-70% = medium, 70-100% = intense
+  const shakeIntensity = progress < 0.3
+    ? progress / 0.3 * 2        // 0 to 2px
+    : progress < 0.7
+    ? 2 + ((progress - 0.3) / 0.4) * 6  // 2 to 8px
+    : 8 + ((progress - 0.7) / 0.3) * 8; // 8 to 16px
+
+  const shakeSpeed = progress < 0.3 ? 0.15 : progress < 0.7 ? 0.08 : 0.04;
 
   return (
     <AnimatePresence>
@@ -207,34 +232,34 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
           style={{ background: "hsl(230 25% 3%)" }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.3 }}
         >
-          {/* Radial glow behind logo */}
+          {/* Radial glow */}
           <motion.div
             className="absolute z-0"
             style={{
-              width: 500,
-              height: 500,
-              borderRadius: "50%",
+              width: 500, height: 500, borderRadius: "50%",
               background: "radial-gradient(circle, hsl(190 100% 50% / 0.08) 0%, hsl(320 100% 50% / 0.04) 40%, transparent 70%)",
             }}
             animate={
-              isPulse ? { scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }
+              isTvOff ? { scale: 0, opacity: 0 }
+              : isPulse ? { scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }
               : { scale: 1, opacity: isBoot ? 0 : 0.6 }
             }
             transition={
-              isPulse ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
+              isTvOff ? { duration: 0.3 }
+              : isPulse ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
               : { duration: 0.5 }
             }
           />
 
-          {/* Holographic rings SVG */}
+          {/* Holographic rings */}
           <motion.svg
             className="absolute z-[1] w-[260px] h-[260px] md:w-[380px] md:h-[380px] pointer-events-none"
             viewBox="0 0 500 500"
             style={{ marginTop: "-20px" }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6 }}
+            animate={isTvOff ? { opacity: 0, scaleY: 0 } : { opacity: 1, scale: 1 }}
+            transition={isTvOff ? { duration: 0.25 } : { duration: 0.6 }}
           >
             <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
             <HoloRing radius={115} delay={0} color="hsl(190, 100%, 50%)" />
@@ -242,27 +267,49 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
             <HoloRing radius={135} delay={0.8} color="hsl(50, 100%, 50%)" />
           </motion.svg>
 
-          {/* Logo container — uses CollapsingLogo canvas */}
+          {/* Logo container with progressive shake + TV-off */}
           <motion.div
             className="relative z-10 w-[260px] h-[260px] md:w-[380px] md:h-[380px]"
             animate={
-              isBoot
+              isTvOff
+                ? { scaleX: 1.3, scaleY: 0, opacity: 0, filter: "brightness(3) saturate(0)" }
+                : isBoot
                 ? { opacity: [0, 0.1, 0, 0.4, 0, 0.8, 0.5, 1], scale: [0.8, 0.85, 0.8, 0.9, 0.85, 1], rotate: [0, -1, 1, -0.5, 0] }
                 : isReveal
                 ? { opacity: 1, scale: 1, rotate: 0 }
-                : { opacity: 1, scale: 1 }
+                : {
+                    opacity: 1,
+                    scale: 1,
+                    x: [
+                      -shakeIntensity, shakeIntensity * 0.7,
+                      -shakeIntensity * 0.5, shakeIntensity,
+                      -shakeIntensity * 0.8, shakeIntensity * 0.3,
+                      -shakeIntensity * 0.6, 0,
+                    ],
+                    y: [
+                      shakeIntensity * 0.3, -shakeIntensity * 0.5,
+                      shakeIntensity * 0.2, -shakeIntensity * 0.4,
+                      shakeIntensity * 0.6, -shakeIntensity * 0.2,
+                      shakeIntensity * 0.1, 0,
+                    ],
+                  }
             }
             transition={
-              isBoot
+              isTvOff
+                ? { duration: 0.35, ease: "easeIn" }
+                : isBoot
                 ? { duration: 1, ease: "easeInOut" }
+                : isPulse
+                ? { duration: shakeSpeed * 8, repeat: Infinity, ease: "linear" }
                 : { duration: 0.5 }
             }
           >
             <DigitalNoise active={isBoot} />
+            <TVShutdown active={isTvOff} />
 
             <img
               src={logoImage}
-              alt="IGOR FUNK SYSTEM"
+              alt="IGOR FUCKN SYSTEM"
               className="w-full h-full object-contain relative z-10"
               style={{
                 filter: isBoot
@@ -296,7 +343,11 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
           </motion.div>
 
           {/* Title text */}
-          <motion.div className="z-10 mt-4 text-center">
+          <motion.div
+            className="z-10 mt-4 text-center"
+            animate={isTvOff ? { opacity: 0, scaleY: 0 } : {}}
+            transition={isTvOff ? { duration: 0.2 } : {}}
+          >
             <motion.h1
               className="font-display text-lg md:text-xl tracking-[0.4em] font-bold"
               style={{
@@ -308,9 +359,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
               }}
               initial={{ opacity: 0, y: 20 }}
               animate={
-                isReveal || isPulse
-                  ? { opacity: 1, y: 0, scale: 1 }
-                  : { opacity: 0, y: 20 }
+                isReveal || isPulse ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 20 }
               }
               transition={{ duration: 0.5, delay: isReveal ? 0.3 : 0 }}
             >
@@ -321,53 +370,65 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
               style={{ color: "hsl(190 100% 60%)", textShadow: "0 0 10px hsl(190 100% 50% / 0.5)" }}
               initial={{ opacity: 0, y: 10 }}
               animate={
-                isReveal || isPulse
-                  ? { opacity: 1, y: 0 }
-                  : { opacity: 0, y: 10 }
+                isReveal || isPulse ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }
               }
               transition={{ duration: 0.5, delay: isReveal ? 0.6 : 0 }}
             >
-              FUNK SYSTEM
+              FUCKN SYSTEM
             </motion.p>
           </motion.div>
 
           {/* Progress bar */}
-          {(
+          <motion.div
+            className="w-52 md:w-72 mt-8 z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isTvOff ? 0 : phase === "boot" ? 0 : 1 }}
+            transition={{ duration: isTvOff ? 0.15 : 0.5 }}
+          >
+            <div className="h-[2px] bg-muted/30 rounded-full overflow-hidden relative">
+              <motion.div
+                className="h-full rounded-full relative"
+                style={{
+                  background: "linear-gradient(90deg, hsl(320 100% 50%), hsl(190 100% 50%), hsl(50 100% 50%))",
+                  backgroundSize: "300% 100%",
+                  width: `${progress * 100}%`,
+                }}
+                animate={{ backgroundPosition: ["0% 0%", "300% 0%"] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              />
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full"
+                style={{
+                  left: `${progress * 100}%`,
+                  background: "hsl(190 100% 60%)",
+                  boxShadow: "0 0 12px hsl(190 100% 50%), 0 0 24px hsl(190 100% 50% / 0.5)",
+                  transform: `translate(-50%, -50%)`,
+                  opacity: progress > 0.01 ? 1 : 0,
+                }}
+              />
+            </div>
+            <div className="flex justify-between mt-2">
+              <span className="text-[8px] text-muted-foreground font-mono tracking-[0.2em]">SYSTEM BOOT</span>
+              <span className="text-[8px] font-mono tracking-wider" style={{ color: "hsl(190 100% 60%)" }}>
+                {Math.round(progress * 100)}%
+              </span>
+            </div>
+          </motion.div>
+
+          {/* TV-off horizontal line */}
+          {isTvOff && (
             <motion.div
-              className="w-52 md:w-72 mt-8 z-10"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: phase === "boot" ? 0 : 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="h-[2px] bg-muted/30 rounded-full overflow-hidden relative">
-                <motion.div
-                  className="h-full rounded-full relative"
-                  style={{
-                    background: "linear-gradient(90deg, hsl(320 100% 50%), hsl(190 100% 50%), hsl(50 100% 50%))",
-                    backgroundSize: "300% 100%",
-                    width: `${progress * 100}%`,
-                  }}
-                  animate={{ backgroundPosition: ["0% 0%", "300% 0%"] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                />
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full"
-                  style={{
-                    left: `${progress * 100}%`,
-                    background: "hsl(190 100% 60%)",
-                    boxShadow: "0 0 12px hsl(190 100% 50%), 0 0 24px hsl(190 100% 50% / 0.5)",
-                    transform: `translate(-50%, -50%)`,
-                    opacity: progress > 0.01 ? 1 : 0,
-                  }}
-                />
-              </div>
-              <div className="flex justify-between mt-2">
-                <span className="text-[8px] text-muted-foreground font-mono tracking-[0.2em]">SYSTEM BOOT</span>
-                <span className="text-[8px] font-mono tracking-wider" style={{ color: "hsl(190 100% 60%)" }}>
-                  {Math.round(progress * 100)}%
-                </span>
-              </div>
-            </motion.div>
+              className="absolute z-50 left-0 right-0 pointer-events-none"
+              style={{
+                top: "50%",
+                height: 2,
+                background: "linear-gradient(90deg, transparent 5%, hsl(190 100% 80%) 30%, white 50%, hsl(190 100% 80%) 70%, transparent 95%)",
+                boxShadow: "0 0 20px hsl(190 100% 50%), 0 0 40px hsl(190 100% 50% / 0.5)",
+              }}
+              initial={{ opacity: 1, scaleX: 1 }}
+              animate={{ opacity: 0, scaleX: 0 }}
+              transition={{ duration: 0.4, delay: 0.2, ease: "easeIn" }}
+            />
           )}
 
           {/* Decorative scan line */}
