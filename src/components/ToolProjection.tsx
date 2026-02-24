@@ -10,33 +10,57 @@ interface ToolProjectionProps {
 
 /**
  * Central projection panel for tools.
- * Renders a floating glassmorphism panel in the center of the viewport
- * with a diagonal pop-out animation originating from bottom-left (tool drawer).
+ * Diagonal glide animation from bottom-left tool drawer to center
+ * with spring bounce and intense backdrop blur behind the panel.
  */
 const ToolProjection = ({ title, children, onClose }: ToolProjectionProps) => (
   <motion.div
-    initial={{ opacity: 0, scale: 0.3, x: "-40vw", y: "30vh" }}
-    animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
-    exit={{ opacity: 0, scale: 0.3, x: "-40vw", y: "30vh" }}
-    transition={{ type: "spring", stiffness: 260, damping: 22, mass: 0.8 }}
-    className="fixed z-50 inset-0 flex items-center justify-center pointer-events-none"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.25 }}
+    className="fixed z-50 inset-0 flex items-center justify-center"
   >
-    <div
-      className="pointer-events-auto w-[420px] max-w-[90vw] max-h-[70vh] flex flex-col
-        rounded-sm border border-accent/40
-        bg-background/90 backdrop-blur-2xl
-        shadow-[0_0_60px_hsl(var(--accent)/0.18),0_0_20px_hsl(var(--accent)/0.10)]"
+    {/* Backdrop blur layer — no dark overlay, just blur */}
+    <motion.div
+      initial={{ backdropFilter: "blur(0px)" }}
+      animate={{ backdropFilter: "blur(12px)" }}
+      exit={{ backdropFilter: "blur(0px)" }}
+      transition={{ duration: 0.3 }}
+      className="absolute inset-0"
+      onClick={onClose}
+    />
+
+    {/* Floating panel with diagonal glide */}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.15, x: "-42vw", y: "38vh" }}
+      animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+      exit={{ opacity: 0, scale: 0.15, x: "-42vw", y: "38vh" }}
+      transition={{
+        type: "spring",
+        stiffness: 200,
+        damping: 18,
+        mass: 0.7,
+        restDelta: 0.5,
+      }}
+      className="relative z-10 w-[440px] max-w-[92vw] max-h-[75vh] flex flex-col
+        rounded-sm border border-accent/50
+        bg-background/92 backdrop-blur-2xl
+        shadow-[0_0_80px_hsl(var(--accent)/0.2),0_0_30px_hsl(var(--accent)/0.12),inset_0_1px_0_hsl(var(--accent)/0.1)]"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-accent/20">
-        <span className="font-display text-xs tracking-[0.25em] text-foreground text-glow uppercase">
-          {title}
-        </span>
+      <div className="flex items-center justify-between px-5 py-3 border-b border-accent/25">
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_6px_hsl(var(--accent)/0.6)] animate-pulse" />
+          <span className="font-display text-xs tracking-[0.25em] text-foreground text-glow uppercase">
+            {title}
+          </span>
+        </div>
         <button
           onClick={onClose}
-          className="w-6 h-6 rounded-sm flex items-center justify-center
+          className="w-7 h-7 rounded-sm flex items-center justify-center
             border border-accent/30 bg-accent/10
-            hover:border-accent/60 hover:bg-accent/20 hover:shadow-[0_0_10px_hsl(var(--accent)/0.3)]
+            hover:border-accent/60 hover:bg-accent/25 hover:shadow-[0_0_12px_hsl(var(--accent)/0.35)]
             transition-all duration-200 text-muted-foreground hover:text-foreground"
         >
           <X className="w-3.5 h-3.5" />
@@ -47,7 +71,7 @@ const ToolProjection = ({ title, children, onClose }: ToolProjectionProps) => (
       <div className="flex-1 overflow-y-auto p-5 hud-scroll">
         {children}
       </div>
-    </div>
+    </motion.div>
   </motion.div>
 );
 
