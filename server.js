@@ -145,7 +145,15 @@ app.get("/api/radio/now-playing", async (_req, res) => {
     // const artist = source?.artist || "---";
     // res.json({ title, artist, album: "---", coverUrl: "" });
 
-    // Placeholder estático até conectar ao Icecast:
+    // RadioBOSS envia metadados no formato "%artist - %title" via stream header.
+    // Para ler em tempo real, faça fetch dos headers do stream ou use a API do RadioBOSS.
+    // Exemplo com fetch do stream (descomente quando pronto):
+    // const streamRes = await fetch("https://stream.igorfucknsystem.com.br/live", { method: "HEAD" });
+    // const icyTitle = streamRes.headers.get("icy-metadata") || "";
+    // const [artist, title] = icyTitle.includes(" - ") ? icyTitle.split(" - ", 2) : ["---", icyTitle || "LIVE BROADCAST"];
+    // res.json({ title, artist, album: "---", coverUrl: "" });
+
+    // Placeholder até conectar ao RadioBOSS:
     res.json({
       title: "LIVE BROADCAST",
       artist: "IGOR FUCKN SYSTEM",
