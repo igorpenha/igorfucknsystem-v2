@@ -127,24 +127,26 @@ const Index = () => {
         <main className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-3 relative z-10 flex-1 min-h-0 overflow-hidden">
           {/* Left Column - File Menu */}
           <div ref={leftColRef} className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
-            <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp}>
-              <HudPanel title="Arquivos">
-                <FileMenu
-                  activeFolder={activeFolder}
-                  onSelectFolder={handleSelectFolder}
-                  onRescan={handleRescan}
-                  rescanning={rescanning}
-                />
+            <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              <HudPanel title="Arquivos" className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <FileMenu
+                    activeFolder={activeFolder}
+                    onSelectFolder={handleSelectFolder}
+                    onRescan={handleRescan}
+                    rescanning={rescanning}
+                  />
+                </div>
               </HudPanel>
             </motion.div>
 
-            <motion.div ref={calcRef} custom={2} initial="hidden" animate="visible" variants={fadeUp}>
+            <motion.div ref={calcRef} custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
               <HudPanel title="Calculadora">
                 <Calculator />
               </HudPanel>
             </motion.div>
 
-            <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp}>
+            <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0">
               <NetworkDeviceMonitor />
             </motion.div>
           </div>
