@@ -138,7 +138,7 @@ const SecurityCameraPanel = () => {
   }, [isAutoRotating, loadStream, stopRotationTimer]);
 
   return (
-    <div className="hud-panel rounded-sm p-4 scanlines flex flex-col" style={{ height: "100%" }}>
+    <div className="hud-panel rounded-sm p-4 scanlines flex flex-col h-full min-h-0">
       {/* Title bar */}
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border shrink-0">
         <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow" />
@@ -221,7 +221,7 @@ const SecurityCameraPanel = () => {
           </div>
 
           {/* Video container */}
-          <div className="relative bg-muted/20 rounded-sm overflow-hidden crt-filter flex-1 min-h-0" style={{ aspectRatio: "16/9" }}>
+          <div className="relative bg-muted/20 rounded-sm overflow-hidden crt-filter flex-1 min-h-0">
             {/* Grid overlay */}
             <div
               className="absolute inset-0 pointer-events-none opacity-10 z-[5]"

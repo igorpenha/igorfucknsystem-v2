@@ -74,7 +74,7 @@ const Index = () => {
     setRescanning(false);
   }, [activeFolder, loadFiles]);
 
-  // Align: file viewer bottom = calculator bottom; camera panel bottom = left column bottom
+  // Align: file viewer bottom = calculator bottom; camera panel max height = remaining space
   useEffect(() => {
     const sync = () => {
       if (calcRef.current && fileViewerRef.current) {
@@ -82,6 +82,13 @@ const Index = () => {
         const viewerTop = fileViewerRef.current.getBoundingClientRect().top;
         const h = calcBottom - viewerTop;
         if (h > 80) setFileViewerH(h);
+      }
+      // Camera panel: align bottom with left column bottom
+      if (leftColRef.current && cameraPanelRef.current) {
+        const leftBottom = leftColRef.current.getBoundingClientRect().bottom;
+        const camTop = cameraPanelRef.current.getBoundingClientRect().top;
+        const camH = leftBottom - camTop;
+        if (camH > 100) setCameraMaxH(camH);
       }
     };
     sync();
@@ -141,7 +148,7 @@ const Index = () => {
           {/* Center Column - File Viewer + Camera */}
           <div ref={fileViewerRef} className="lg:col-span-6 flex flex-col gap-3 min-h-0">
             <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="shrink-0"
-              style={fileViewerH ? { maxHeight: fileViewerH } : undefined}
+              style={fileViewerH ? { height: fileViewerH } : undefined}
             >
               <HudPanel title="Lista de Arquivos" className="overflow-hidden flex flex-col h-full">
                 <div className="overflow-y-auto flex-1 min-h-0">
@@ -170,7 +177,9 @@ const Index = () => {
             </motion.div>
 
             {/* Security Camera Panel - fills remaining space */}
-            <motion.div ref={cameraPanelRef} custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0 overflow-hidden">
+            <motion.div ref={cameraPanelRef} custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0 overflow-hidden"
+              style={cameraMaxH ? { height: cameraMaxH } : undefined}
+            >
               <SecurityCameraPanel />
             </motion.div>
           </div>
