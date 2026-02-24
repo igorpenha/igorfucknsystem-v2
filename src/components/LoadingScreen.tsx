@@ -159,15 +159,68 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
     } catch {}
   }, []);
 
-  // Progress
+  // Progress sound - ascending digital hum that rises with progress
   useEffect(() => {
+    let ac: AudioContext | null = null;
+    let osc: OscillatorNode | null = null;
+    let gain: GainNode | null = null;
+    let tickOsc: OscillatorNode | null = null;
+    let tickGain: GainNode | null = null;
+
+    try {
+      ac = new AudioContext();
+      // Continuous rising tone
+      osc = ac.createOscillator();
+      gain = ac.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(100, ac.currentTime);
+      gain.gain.setValueAtTime(0, ac.currentTime);
+      gain.gain.linearRampToValueAtTime(0.04, ac.currentTime + 1);
+      osc.connect(gain).connect(ac.destination);
+      osc.start();
+
+      // Ticking/scanning pulse
+      tickOsc = ac.createOscillator();
+      tickGain = ac.createGain();
+      tickOsc.type = "square";
+      tickOsc.frequency.setValueAtTime(8, ac.currentTime);
+      tickGain.gain.setValueAtTime(0.015, ac.currentTime);
+      const tickFilter = ac.createBiquadFilter();
+      tickFilter.type = "bandpass";
+      tickFilter.frequency.setValueAtTime(600, ac.currentTime);
+      tickFilter.Q.setValueAtTime(5, ac.currentTime);
+      tickOsc.connect(tickFilter).connect(tickGain).connect(ac.destination);
+      tickOsc.start();
+    } catch {}
+
     const start = Date.now();
     const tick = () => {
       const p = Math.min((Date.now() - start) / LOADING_DURATION, 1);
       setProgress(p);
+
+      // Update rising frequency based on progress
+      if (osc && ac) {
+        osc.frequency.setValueAtTime(100 + p * 400, ac.currentTime);
+      }
+      if (gain && ac) {
+        gain.gain.setValueAtTime(0.04 * (1 - p * 0.5), ac.currentTime);
+      }
+
       if (p < 1) {
         requestAnimationFrame(tick);
       } else {
+        // Fade out progress sound
+        if (gain && ac) {
+          gain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.3);
+        }
+        if (tickGain && ac) {
+          tickGain.gain.linearRampToValueAtTime(0, ac.currentTime + 0.2);
+        }
+        setTimeout(() => {
+          osc?.stop();
+          tickOsc?.stop();
+        }, 400);
+
         setPhase("shatter");
         playExitSound();
         setTimeout(() => {
@@ -177,6 +230,14 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
       }
     };
     requestAnimationFrame(tick);
+
+    return () => {
+      try {
+        osc?.stop();
+        tickOsc?.stop();
+        ac?.close();
+      } catch {}
+    };
   }, [playExitSound]);
 
   // Phase transitions
@@ -207,25 +268,6 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4 }}
         >
-          {/* Exit: horizontal scan wipe */}
-          {isShatter && (
-            <>
-              <motion.div
-                className="absolute inset-0 z-30 pointer-events-none"
-                style={{ background: "linear-gradient(180deg, transparent 0%, hsl(190 100% 60% / 0.15) 45%, hsl(190 100% 80% / 0.6) 50%, hsl(190 100% 60% / 0.15) 55%, transparent 100%)" }}
-                initial={{ y: "0%" }}
-                animate={{ y: ["-100%", "200%"] }}
-                transition={{ duration: 0.6, ease: "easeIn" }}
-              />
-              <motion.div
-                className="absolute inset-0 z-35 pointer-events-none"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 0.15, 0] }}
-                transition={{ duration: 0.3, delay: 0.15 }}
-                style={{ background: "hsl(190 100% 70%)" }}
-              />
-            </>
-          )}
 
           {/* Radial glow behind logo */}
           <motion.div
@@ -259,10 +301,10 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
 
           {/* Logo container */}
           <motion.div
-            className="relative z-10 w-[260px] h-[260px] md:w-[380px] md:h-[380px]"
+            className="relative z-10 w-[260px] h-[260px] md:w-[380px] md:h-[380px] overflow-hidden rounded-full"
             animate={
               isShatter
-                ? { scale: [1, 1.08, 0.95], opacity: [1, 0.8, 0], y: [0, -10, 30] }
+                ? { scale: [1, 1.06, 0.9], opacity: [1, 0.7, 0], y: [0, -8, 20] }
                 : isBoot
                 ? { opacity: [0, 0.1, 0, 0.4, 0, 0.8, 0.5, 1], scale: [0.8, 0.85, 0.8, 0.9, 0.85, 1], rotate: [0, -1, 1, -0.5, 0] }
                 : isReveal
@@ -273,7 +315,7 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
             }
             transition={
               isShatter
-                ? { duration: 0.7, ease: [0.22, 1, 0.36, 1] }
+                ? { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
                 : isBoot
                 ? { duration: 1, ease: "easeInOut" }
                 : isPulse
@@ -281,6 +323,25 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
                 : { duration: 0.5 }
             }
           >
+            {/* Exit scan effect INSIDE the logo */}
+            {isShatter && (
+              <>
+                <motion.div
+                  className="absolute inset-0 z-30 pointer-events-none"
+                  style={{ background: "linear-gradient(180deg, transparent 0%, hsl(190 100% 60% / 0.2) 42%, hsl(190 100% 90% / 0.9) 49%, hsl(320 100% 70% / 0.7) 51%, hsl(190 100% 60% / 0.2) 58%, transparent 100%)" }}
+                  initial={{ y: "-100%" }}
+                  animate={{ y: "200%" }}
+                  transition={{ duration: 0.5, ease: "easeIn" }}
+                />
+                <motion.div
+                  className="absolute inset-0 z-25 pointer-events-none"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 0.5, 0.8, 0] }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  style={{ background: "radial-gradient(circle, hsl(190 100% 70% / 0.6), transparent 70%)" }}
+                />
+              </>
+            )}
             <DigitalNoise active={isBoot} />
 
             <img
