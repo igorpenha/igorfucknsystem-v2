@@ -108,8 +108,10 @@ const Index = () => {
           <div className="flex items-center gap-4">
             <HeaderGlitchLogo />
             <div>
-              <h1 className="font-display text-sm md:text-base text-foreground text-glow tracking-[0.2em]">
-                IGOR FUNK SYSTEM
+              <h1 className="font-display text-sm md:text-base tracking-[0.2em] flex gap-2 items-center header-shine-container">
+                <span className="header-shine-word" style={{ color: "hsl(50 100% 55%)", textShadow: "0 0 8px hsl(50 100% 50% / 0.5)" }}>IGOR</span>
+                <span className="header-shine-word" style={{ color: "hsl(320 100% 55%)", textShadow: "0 0 8px hsl(320 100% 50% / 0.5)" }}>FUCKN</span>
+                <span className="header-shine-word" style={{ color: "hsl(190 100% 55%)", textShadow: "0 0 8px hsl(190 100% 50% / 0.5)" }}>SYSTEM</span>
               </h1>
               <p className="text-[10px] text-muted-foreground tracking-widest">
                 <TypingText text="SISTEMA DE GERENCIAMENTO // v2.0" speed={30} />
@@ -203,7 +205,7 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="border-t border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">
-          <span className="text-[10px] text-muted-foreground tracking-widest">© 2026 IGOR FUNK SYSTEM</span>
+          <span className="text-[10px] text-muted-foreground tracking-widest">© 2026 IGOR FUCKN SYSTEM</span>
           <span className="text-[10px] text-muted-foreground tracking-widest">BUILD 2.0.0 // ALL SYSTEMS NOMINAL</span>
         </footer>
       </div>
