@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FILE_API_BASE_URL } from "@/config/api";
 import CoverFlowCarousel from "@/components/radio/CoverFlowCarousel";
 import CarouselErrorBoundary from "@/components/radio/CarouselErrorBoundary";
+import TrackHistory from "@/components/radio/TrackHistory";
+import RadioSvgDecorations from "@/components/radio/RadioSvgDecorations";
 
 const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
 const METADATA_URL = `${FILE_API_BASE_URL}/api/radio/now-playing`;
@@ -81,6 +83,13 @@ const VolumeIcon = ({ muted }: { muted: boolean }) => (
   </svg>
 );
 
+interface TrackHistoryEntry {
+  title: string;
+  artist: string;
+  albumArt?: string;
+  timestamp: number;
+}
+
 const WebRadio = () => {
   const [playing, setPlaying] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -104,6 +113,7 @@ const WebRadio = () => {
   const [coverError, setCoverError] = useState(false);
   const [transitionKey, setTransitionKey] = useState(0);
   const lastTrackRef = useRef("");
+  const [trackHistory, setTrackHistory] = useState<TrackHistoryEntry[]>([]);
 
   // ── Metadata polling ──
   useEffect(() => {
@@ -124,6 +134,16 @@ const WebRadio = () => {
             if (prev.cover !== newCover) setCoverError(false);
             if (lastTrackRef.current && lastTrackRef.current !== trackId) {
               setTransitionKey(k => k + 1);
+              // Add to history
+              setTrackHistory(h => {
+                const entry: TrackHistoryEntry = {
+                  title: data.title || "UNKNOWN",
+                  artist: data.artist || "UNKNOWN",
+                  albumArt: newCover,
+                  timestamp: ts,
+                };
+                return [entry, ...h].slice(0, 5);
+              });
             }
             lastTrackRef.current = trackId;
             return {
@@ -256,27 +276,23 @@ const WebRadio = () => {
     if (audioRef.current) audioRef.current.volume = muted ? 0 : v;
   }, [muted]);
 
-  /* ════════════════════════════════════════════
-     LAYOUT: CSS Grid com 4 rows fixas
-     [controls]  auto
-     [spectrum]  1fr  (expande)
-     [carousel]  140px (fixo)
-     [footer]    auto
-     ════════════════════════════════════════════ */
   return (
     <div
       className="font-mono select-none overflow-hidden relative"
       style={{
         display: "grid",
-        gridTemplateRows: "auto 1fr 140px auto",
+        gridTemplateRows: "auto 1fr 160px auto auto",
         height: "100%",
         width: "100%",
       }}
     >
+      {/* SVG Decorations */}
+      <RadioSvgDecorations />
+
       <audio ref={audioRef} playsInline crossOrigin="anonymous" />
 
       {/* ═══ ROW 1: Controles ═══ */}
-      <div className="px-2 pt-2 pb-1.5 flex items-center gap-2 border-b border-border/15">
+      <div className="px-2 pt-2 pb-1.5 flex items-center gap-2 border-b border-border/15 relative z-10">
         <button
           onClick={togglePlay}
           className="relative w-10 h-10 shrink-0 border border-primary/40 bg-primary/[0.08] hover:bg-primary/[0.18] transition-all flex items-center justify-center"
@@ -344,7 +360,7 @@ const WebRadio = () => {
       </div>
 
       {/* ═══ ROW 2: Visualizador de Espectro (flex-grow) ═══ */}
-      <div className="px-2 flex items-end justify-center gap-[1.5px] py-2 min-h-0">
+      <div className="px-2 flex items-end justify-center gap-[1.5px] py-2 min-h-0 relative z-10">
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
           const hue = 185 + (i / BAR_COUNT) * 135;
           return (
@@ -363,12 +379,9 @@ const WebRadio = () => {
         })}
       </div>
 
-      {/* ═══ ROW 3: Carrossel 3D + Metadados (altura fixa 140px) ═══ */}
-      <div className="px-2 flex flex-col items-center justify-center gap-1 border-t border-border/15 overflow-hidden">
-        {/* Linha divisória decorativa */}
+      {/* ═══ ROW 3: Carrossel + Metadados (160px) ═══ */}
+      <div className="px-2 flex flex-col items-center justify-center gap-1.5 border-t border-border/15 overflow-hidden relative z-10">
         <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
-
-        {/* Carousel isolado em Error Boundary */}
         <CarouselErrorBoundary>
           <CoverFlowCarousel
             currentCover={coverError ? "" : track.cover}
@@ -378,9 +391,7 @@ const WebRadio = () => {
             transitionKey={transitionKey}
           />
         </CarouselErrorBoundary>
-
-        {/* Metadata */}
-        <div className="flex items-center gap-2 w-full max-w-[220px]">
+        <div className="flex items-center gap-2 w-full max-w-[260px]">
           <MiniAudioBars active={playing} />
           <div className="flex-1 min-w-0 space-y-0.5 text-center">
             <p className="text-[11px] text-foreground font-display tracking-wider truncate leading-tight drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]">
@@ -397,8 +408,13 @@ const WebRadio = () => {
         </div>
       </div>
 
-      {/* ═══ ROW 4: Footer decorativo ═══ */}
-      <div className="px-2 py-0.5 flex justify-between text-[5px] tracking-[0.2em] text-muted-foreground/15 uppercase border-t border-border/8">
+      {/* ═══ ROW 4: Histórico de Transmissão ═══ */}
+      <div className="relative z-10 overflow-y-auto hud-scroll">
+        <TrackHistory tracks={trackHistory} />
+      </div>
+
+      {/* ═══ ROW 5: Footer decorativo ═══ */}
+      <div className="px-2 py-0.5 flex justify-between text-[5px] tracking-[0.2em] text-muted-foreground/15 uppercase border-t border-border/8 relative z-10">
         <span>CODEC: MP3</span>
         <span>LATENCY: LOW</span>
         <span>CIPHER: AES-256</span>
