@@ -278,10 +278,10 @@ const WebRadio = () => {
 
   return (
     <div
-      className="font-mono select-none overflow-hidden relative"
+      className="font-mono select-none overflow-hidden relative flex-1 min-h-0"
       style={{
         display: "grid",
-        gridTemplateRows: "auto 1fr 160px auto auto",
+        gridTemplateRows: "auto 1fr 160px 1fr auto",
         height: "100%",
         width: "100%",
       }}
