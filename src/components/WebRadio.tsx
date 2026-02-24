@@ -129,7 +129,10 @@ const WebRadio = () => {
           const newCover = `${FILE_API_BASE_URL}/api/radio/artwork?t=${ts}`;
           const newCoverPrev = `${FILE_API_BASE_URL}/api/radio/artwork-prev?t=${ts}`;
           const newCoverNext = `${FILE_API_BASE_URL}/api/radio/artwork-next?t=${ts}`;
-          const trackId = `${data.artist}-${data.title}`;
+          // Clean metadata: RadioBOSS concatenates current + next track with \r\n
+          const cleanTitle = (data.title || "LIVE BROADCAST").split(/\r?\n/)[0].trim();
+          const cleanArtist = (data.artist || "SCANNING...").split(/\r?\n/)[0].trim();
+          const trackId = `${cleanArtist}-${cleanTitle}`;
           setTrack(prev => {
             if (prev.cover !== newCover) setCoverError(false);
             if (lastTrackRef.current && lastTrackRef.current !== trackId) {
@@ -147,8 +150,8 @@ const WebRadio = () => {
             }
             lastTrackRef.current = trackId;
             return {
-              title: data.title || "LIVE BROADCAST",
-              artist: data.artist || "SCANNING...",
+              title: cleanTitle,
+              artist: cleanArtist,
               album: data.album || "NO_DATA",
               cover: newCover,
               coverPrev: newCoverPrev,
