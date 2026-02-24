@@ -91,16 +91,16 @@ const WebRadio = () => {
           const bar = barsRef.current[i];
           if (!bar) continue;
 
-          // Bass compression + high-freq boost for balanced spectrum
-          const bassAttenuation = i < 4 ? 0.45 + (i / 4) * 0.35 : 1; // compress first 4 bins
-          const midBoost = i >= 4 && i < 12 ? 1.15 : 1;
-          const highBoost = 1 + Math.log2(1 + i) * 0.35;
+          // Heavy bass compression + balanced mid/high boost
+          const bassAttenuation = i < 6 ? 0.3 + (i / 6) * 0.5 : 1; // compress first 6 bins hard
+          const midBoost = i >= 6 && i < 14 ? 1.1 : 1;
+          const highBoost = 1 + Math.log2(1 + i) * 0.3;
           const raw = Math.min((dataArray[i] / 255) * bassAttenuation * midBoost * highBoost, 1);
-          const val = Math.pow(raw, 0.7); // gentle compression
+          const val = Math.pow(raw, 0.75);
 
-          const h = Math.max(val * 100, 1.5);
+          const h = Math.max(val * 80, 1.5); // cap at 80% height
           const hue = 185 + (i / BAR_COUNT) * 135;
-          const glow = val * val; // quadratic glow intensity
+          const glow = val * val;
 
           bar.style.height = `${h}%`;
           bar.style.background = `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.08), hsla(${hue}, 100%, 55%, ${0.3 + val * 0.7}))`;
