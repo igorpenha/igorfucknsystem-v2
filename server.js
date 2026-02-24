@@ -131,6 +131,33 @@ app.get("/api/download", async (req, res) => {
   }
 });
 
+// ── GET /api/radio/now-playing ────────────────────────────
+// Retorna metadados da música atual do stream Icecast.
+// TODO: Conectar ao Icecast status-json.xsl para dados reais.
+
+app.get("/api/radio/now-playing", async (_req, res) => {
+  try {
+    // Exemplo: buscar do Icecast (descomente e ajuste a URL quando pronto)
+    // const icecastRes = await fetch("http://localhost:8000/status-json.xsl");
+    // const icecastData = await icecastRes.json();
+    // const source = icecastData.icestats?.source;
+    // const title = source?.title || "LIVE BROADCAST";
+    // const artist = source?.artist || "---";
+    // res.json({ title, artist, album: "---", coverUrl: "" });
+
+    // Placeholder estático até conectar ao Icecast:
+    res.json({
+      title: "LIVE BROADCAST",
+      artist: "IGOR FUCKN SYSTEM",
+      album: "STREAMING",
+      coverUrl: "",
+    });
+  } catch (err) {
+    console.error("GET /api/radio/now-playing error:", err);
+    res.status(500).json({ error: "Failed to fetch now-playing metadata" });
+  }
+});
+
 // ── Start ────────────────────────────────────────────────
 
 app.listen(PORT, () => {
