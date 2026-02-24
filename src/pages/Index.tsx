@@ -14,10 +14,10 @@ import SecurityCameraPanel from "@/components/SecurityCameraPanel";
 import FileMenu from "@/components/FileMenu";
 import FileViewer from "@/components/FileViewer";
 import SpaceBackground from "@/components/SpaceBackground";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AnimatePresence } from "framer-motion";
 import { fetchFiles, type FsEntry } from "@/services/fileSystemApi";
 import { toast } from "sonner";
-import { CalculatorIcon, Wifi } from "lucide-react";
+import { CalculatorIcon, Wifi, X } from "lucide-react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -199,29 +199,6 @@ const Index = () => {
           </div>
         </main>
 
-        {/* Calculator Modal */}
-        <Dialog open={calcOpen} onOpenChange={setCalcOpen}>
-          <DialogContent className="hud-panel border-primary/30 max-w-sm bg-background/95 backdrop-blur-xl">
-            <DialogHeader>
-              <DialogTitle className="font-display text-xs tracking-[0.25em] text-foreground text-glow uppercase">
-                Calculadora
-              </DialogTitle>
-            </DialogHeader>
-            <Calculator />
-          </DialogContent>
-        </Dialog>
-
-        {/* Network IPs Modal */}
-        <Dialog open={networkOpen} onOpenChange={setNetworkOpen}>
-          <DialogContent className="hud-panel border-primary/30 max-w-md bg-background/95 backdrop-blur-xl">
-            <DialogHeader>
-              <DialogTitle className="font-display text-xs tracking-[0.25em] text-foreground text-glow uppercase">
-                IPs da Rede
-              </DialogTitle>
-            </DialogHeader>
-            <NetworkDeviceMonitor asContent />
-          </DialogContent>
-        </Dialog>
 
         {/* Footer */}
         <footer className="border-t border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">
