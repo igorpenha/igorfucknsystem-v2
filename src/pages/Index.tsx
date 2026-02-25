@@ -16,7 +16,9 @@ import SpaceBackground from "@/components/SpaceBackground";
 import { AnimatePresence } from "framer-motion";
 import { fetchFiles, type FsEntry } from "@/services/fileSystemApi";
 import { toast } from "sonner";
-import { CalculatorIcon, Wifi, Radar, Syringe } from "lucide-react";
+import { CalculatorIcon, Wifi, Gauge, FileImage } from "lucide-react";
+import SpeedTest from "@/components/SpeedTest";
+import ImgToPdf from "@/components/ImgToPdf";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -34,6 +36,10 @@ const Index = () => {
   const [rescanning, setRescanning] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
   const [networkOpen, setNetworkOpen] = useState(false);
+  const [speedOpen, setSpeedOpen] = useState(false);
+  const [pdfOpen, setPdfOpen] = useState(false);
+
+  const closeAllTools = () => { setCalcOpen(false); setNetworkOpen(false); setSpeedOpen(false); setPdfOpen(false); };
 
   const loadFiles = useCallback(async (folderName: string) => {
     try {
@@ -152,36 +158,22 @@ const Index = () => {
           <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0">
             <HudPanel title="Ferramentas" className="h-full overflow-hidden flex flex-col">
               <div className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto hud-scroll">
-                <button
-                  onClick={() => { setCalcOpen(v => !v); setNetworkOpen(false); }}
-                  className={`flex items-center gap-2 w-full px-2.5 py-1.5 transition-all duration-200 border-l-2 group ${calcOpen ? "border-l-primary bg-primary/10 text-foreground shadow-[inset_0_0_12px_hsl(var(--primary)/0.1)]" : "border-l-primary/30 bg-transparent hover:border-l-primary hover:bg-primary/5 text-muted-foreground hover:text-foreground"}`}
-                >
-                  <CalculatorIcon className={`w-3.5 h-3.5 shrink-0 transition-colors ${calcOpen ? "text-primary" : "text-primary/60 group-hover:text-primary"}`} />
-                  <span className="text-[9px] tracking-[0.25em] font-display flex-1 text-left">CALCULADORA</span>
-                  <div className={`w-1 h-1 rounded-full transition-all ${calcOpen ? "bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.6)]" : "bg-primary/20 group-hover:bg-primary/50"}`} />
-                </button>
-                <button
-                  onClick={() => { setNetworkOpen(v => !v); setCalcOpen(false); }}
-                  className={`flex items-center gap-2 w-full px-2.5 py-1.5 transition-all duration-200 border-l-2 group ${networkOpen ? "border-l-primary bg-primary/10 text-foreground shadow-[inset_0_0_12px_hsl(var(--primary)/0.1)]" : "border-l-primary/30 bg-transparent hover:border-l-primary hover:bg-primary/5 text-muted-foreground hover:text-foreground"}`}
-                >
-                  <Wifi className={`w-3.5 h-3.5 shrink-0 transition-colors ${networkOpen ? "text-primary" : "text-primary/60 group-hover:text-primary"}`} />
-                  <span className="text-[9px] tracking-[0.25em] font-display flex-1 text-left">IPS DA REDE</span>
-                  <div className={`w-1 h-1 rounded-full transition-all ${networkOpen ? "bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.6)]" : "bg-primary/20 group-hover:bg-primary/50"}`} />
-                </button>
-                <button
-                  className="flex items-center gap-2 w-full px-2.5 py-1.5 transition-all duration-200 border-l-2 border-l-primary/30 bg-transparent hover:border-l-primary hover:bg-primary/5 text-muted-foreground hover:text-foreground group"
-                >
-                  <Radar className="w-3.5 h-3.5 shrink-0 text-primary/60 group-hover:text-primary transition-colors" />
-                  <span className="text-[9px] tracking-[0.25em] font-display flex-1 text-left">NET_SNIFFER</span>
-                  <div className="w-1 h-1 rounded-full bg-primary/20 group-hover:bg-primary/50 transition-all" />
-                </button>
-                <button
-                  className="flex items-center gap-2 w-full px-2.5 py-1.5 transition-all duration-200 border-l-2 border-l-primary/30 bg-transparent hover:border-l-primary hover:bg-primary/5 text-muted-foreground hover:text-foreground group"
-                >
-                  <Syringe className="w-3.5 h-3.5 shrink-0 text-primary/60 group-hover:text-primary transition-colors" />
-                  <span className="text-[9px] tracking-[0.25em] font-display flex-1 text-left">PACKET_INJECT</span>
-                  <div className="w-1 h-1 rounded-full bg-primary/20 group-hover:bg-primary/50 transition-all" />
-                </button>
+                {[
+                  { key: "calc", icon: CalculatorIcon, label: "CALCULADORA", open: calcOpen, toggle: () => { closeAllTools(); setCalcOpen(v => !v); } },
+                  { key: "net", icon: Wifi, label: "IPS DA REDE", open: networkOpen, toggle: () => { closeAllTools(); setNetworkOpen(v => !v); } },
+                  { key: "speed", icon: Gauge, label: "SPEED TEST", open: speedOpen, toggle: () => { closeAllTools(); setSpeedOpen(v => !v); } },
+                  { key: "pdf", icon: FileImage, label: "IMG TO PDF", open: pdfOpen, toggle: () => { closeAllTools(); setPdfOpen(v => !v); } },
+                ].map(({ key, icon: Icon, label, open, toggle }) => (
+                  <button
+                    key={key}
+                    onClick={toggle}
+                    className={`flex items-center gap-2 w-full px-2.5 py-1.5 transition-all duration-200 border-l-2 group ${open ? "border-l-primary bg-primary/10 text-foreground shadow-[inset_0_0_12px_hsl(var(--primary)/0.1)]" : "border-l-primary/30 bg-transparent hover:border-l-primary hover:bg-primary/5 text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${open ? "text-primary" : "text-primary/60 group-hover:text-primary"}`} />
+                    <span className="text-[9px] tracking-[0.25em] font-display flex-1 text-left">{label}</span>
+                    <div className={`w-1 h-1 rounded-full transition-all ${open ? "bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.6)]" : "bg-primary/20 group-hover:bg-primary/50"}`} />
+                  </button>
+                ))}
               </div>
             </HudPanel>
           </motion.div>
@@ -216,6 +208,16 @@ const Index = () => {
         {networkOpen && (
           <ToolProjection title="IPs da Rede" onClose={() => setNetworkOpen(false)}>
             <NetworkDeviceMonitor asContent />
+          </ToolProjection>
+        )}
+        {speedOpen && (
+          <ToolProjection title="Speed Test" onClose={() => setSpeedOpen(false)}>
+            <SpeedTest />
+          </ToolProjection>
+        )}
+        {pdfOpen && (
+          <ToolProjection title="IMG → PDF" onClose={() => setPdfOpen(false)}>
+            <ImgToPdf />
           </ToolProjection>
         )}
       </AnimatePresence>
