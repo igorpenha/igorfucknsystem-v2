@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
+import SecurityCameraGrid from "./SecurityCameraGrid";
 
 const CAMERA_URLS: (string | null)[] = [
   "https://cctv.igorfucknsystem.com.br/ch_cam1.m3u8",       // CAM 01
@@ -267,9 +268,17 @@ const SecurityCameraPanel = () => {
     }, ROTATION_INTERVAL);
   }, [isAutoRotating, loadStream, stopRotationTimer]);
 
+  const [showGrid, setShowGrid] = useState(false);
+
   const hasStream = activeCamera !== null && CAMERAS[activeCamera]?.url;
 
   return (
+    <>
+    <AnimatePresence>
+      {showGrid && (
+        <SecurityCameraGrid cameras={CAMERAS} onClose={() => setShowGrid(false)} />
+      )}
+    </AnimatePresence>
     <div className="hud-panel rounded-sm p-4 scanlines flex flex-col h-full min-h-0">
       {/* Title bar */}
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border shrink-0">
@@ -489,11 +498,15 @@ const SecurityCameraPanel = () => {
         >
           {isAutoRotating ? "⟳ Auto LIGADA" : "⟳ Rotação Auto"}
         </button>
-        <button className="flex-1 py-1.5 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 bg-secondary/10 border-secondary/40 text-secondary hover:bg-secondary/20 hover:shadow-[0_0_12px_hsl(var(--secondary)/0.3)]">
+        <button
+          onClick={() => setShowGrid(true)}
+          className="flex-1 py-1.5 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 bg-secondary/10 border-secondary/40 text-secondary hover:bg-secondary/20 hover:shadow-[0_0_12px_hsl(var(--secondary)/0.3)]"
+        >
           ⊞ Grid
         </button>
       </div>
     </div>
+    </>
   );
 };
 
