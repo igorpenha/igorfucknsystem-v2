@@ -3,28 +3,28 @@ import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CAMERA_URLS: (string | null)[] = [
-  "http://192.168.0.57:3000/ch_cam1.m3u8",       // CAM 01
-  "http://192.168.0.57:3000/ch_cam2.m3u8",       // CAM 02
-  "http://192.168.0.57:3000/dvr1_cam1.m3u8",     // CAM 03
-  "http://192.168.0.57:3000/dvr1_cam2.m3u8",     // CAM 04
-  "http://192.168.0.57:3000/dvr1_cam3.m3u8",     // CAM 05
-  "http://192.168.0.57:3000/dvr1_cam4.m3u8",     // CAM 06
-  "http://192.168.0.57:3000/dvr1_cam5.m3u8",     // CAM 07
-  "http://192.168.0.57:3000/dvr1_cam7.m3u8",     // CAM 08
-  "http://192.168.0.57:3000/dvr1_cam8.m3u8",     // CAM 09
-  "http://192.168.0.57:3000/dvr1_cam9.m3u8",     // CAM 10
-  "http://192.168.0.57:3000/dvr1_cam10.m3u8",    // CAM 11
-  "http://192.168.0.57:3000/dvr1_cam17.m3u8",    // CAM 12
-  "http://192.168.0.57:3000/dvr2_cam1.m3u8",     // CAM 13
-  "http://192.168.0.57:3000/dvr2_cam3.m3u8",     // CAM 14
-  "http://192.168.0.57:3000/dvr2_cam5.m3u8",     // CAM 15
-  "http://192.168.0.57:3000/dvr2_cam11.m3u8",    // CAM 16
-  "http://192.168.0.57:3000/dvr2_cam12.m3u8",    // CAM 17
-  "http://192.168.0.57:3000/dvr2_cam13.m3u8",    // CAM 18
-  "http://192.168.0.57:3000/dvr2_cam14.m3u8",    // CAM 19
-  "http://192.168.0.57:3000/dvr2_cam15.m3u8",    // CAM 20
-  "http://192.168.0.57:3000/dvr3_cam1.m3u8",     // CAM 21
-  "http://192.168.0.57:3000/dvr3_cam2.m3u8",     // CAM 22
+  "https://cctv.igorfucknsystem.com.br/ch_cam1.m3u8",       // CAM 01
+  "https://cctv.igorfucknsystem.com.br/ch_cam2.m3u8",       // CAM 02
+  "https://cctv.igorfucknsystem.com.br/dvr1_cam1.m3u8",     // CAM 03
+  "https://cctv.igorfucknsystem.com.br/dvr1_cam2.m3u8",     // CAM 04
+  "https://cctv.igorfucknsystem.com.br/dvr1_cam3.m3u8",     // CAM 05
+  "https://cctv.igorfucknsystem.com.br/dvr1_cam4.m3u8",     // CAM 06
+  "https://cctv.igorfucknsystem.com.br/dvr1_cam5.m3u8",     // CAM 07
+  "https://cctv.igorfucknsystem.com.br/dvr1_cam7.m3u8",     // CAM 08
+  "https://cctv.igorfucknsystem.com.br/dvr1_cam8.m3u8",     // CAM 09
+  "https://cctv.igorfucknsystem.com.br/dvr1_cam9.m3u8",     // CAM 10
+  "https://cctv.igorfucknsystem.com.br/dvr1_cam10.m3u8",    // CAM 11
+  "https://cctv.igorfucknsystem.com.br/dvr1_cam17.m3u8",    // CAM 12
+  "https://cctv.igorfucknsystem.com.br/dvr2_cam1.m3u8",     // CAM 13
+  "https://cctv.igorfucknsystem.com.br/dvr2_cam3.m3u8",     // CAM 14
+  "https://cctv.igorfucknsystem.com.br/dvr2_cam5.m3u8",     // CAM 15
+  "https://cctv.igorfucknsystem.com.br/dvr2_cam11.m3u8",    // CAM 16
+  "https://cctv.igorfucknsystem.com.br/dvr2_cam12.m3u8",    // CAM 17
+  "https://cctv.igorfucknsystem.com.br/dvr2_cam13.m3u8",    // CAM 18
+  "https://cctv.igorfucknsystem.com.br/dvr2_cam14.m3u8",    // CAM 19
+  "https://cctv.igorfucknsystem.com.br/dvr2_cam15.m3u8",    // CAM 20
+  "https://cctv.igorfucknsystem.com.br/dvr3_cam1.m3u8",     // CAM 21
+  "https://cctv.igorfucknsystem.com.br/dvr3_cam2.m3u8",     // CAM 22
   null,                                           // CAM 23 - Reserva
   null,                                           // CAM 24 - Reserva
 ];
