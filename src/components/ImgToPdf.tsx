@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { FileDown, ImagePlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { jsPDF } from "jspdf";
 
 interface ImageItem {
   id: string;
@@ -52,8 +53,6 @@ const ImgToPdf = () => {
     if (images.length === 0) return;
     setGenerating(true);
     try {
-      const { default: jsPDF } = await import("jspdf");
-
       const loadImg = (src: string): Promise<HTMLImageElement> =>
         new Promise((res, rej) => {
           const img = new Image();
