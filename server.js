@@ -222,30 +222,55 @@ app.get("/api/network/scan", (_req, res) => {
 });
 
 // ── GET /api/speedtest ────────────────────────────────────
-// LAZY LOAD: speedtest-net usa lzma-native (DLL nativa) que pode crashar o Bun no Windows.
-// Carregamos sob demanda para não derrubar o servidor inteiro na inicialização.
+// Pure JS: usa Cloudflare Speedtest API — zero dependências nativas.
 
 app.get("/api/speedtest", async (_req, res) => {
-  let speedTest;
   try {
-    speedTest = require("speedtest-net");
-  } catch (loadErr) {
-    console.error("speedtest-net failed to load (native DLL issue):", loadErr.message);
-    return res.status(503).json({
-      error: "Speed test module unavailable. Native dependency (lzma-native) failed to load on this runtime. Try running the server with Node.js instead of Bun: node server.js",
-    });
-  }
+    // ── PING ──
+    let ping = 0;
+    try {
+      const t0 = performance.now();
+      await fetch("https://speed.cloudflare.com/__down?bytes=0");
+      ping = Math.round(performance.now() - t0);
+    } catch (e) {
+      console.error("Speedtest PING error:", e.message);
+    }
 
-  try {
-    const testResult = await speedTest({ acceptLicense: true, acceptGdpr: true });
-    res.json({
-      ping: Math.round(testResult.ping.latency),
-      download: (testResult.download.bandwidth / 125000).toFixed(2),
-      upload: (testResult.upload.bandwidth / 125000).toFixed(2),
-    });
+    // ── DOWNLOAD (15 MB) ──
+    let download = "0.00";
+    try {
+      const bytes = 15_000_000;
+      const t0 = performance.now();
+      const r = await fetch(`https://speed.cloudflare.com/__down?bytes=${bytes}`);
+      await r.arrayBuffer();
+      const secs = (performance.now() - t0) / 1000;
+      download = ((bytes * 8) / secs / 1_000_000).toFixed(2);
+    } catch (e) {
+      console.error("Speedtest DOWNLOAD error:", e.message);
+    }
+
+    // ── UPLOAD (5 MB) ──
+    let upload = "0.00";
+    try {
+      const size = 5_000_000;
+      const payload = new Uint8Array(size);
+      // preenche com dados pseudo-aleatórios baratos
+      for (let i = 0; i < size; i += 4096) payload[i] = i & 0xff;
+      const t0 = performance.now();
+      await fetch("https://speed.cloudflare.com/__up", {
+        method: "POST",
+        body: payload,
+      });
+      const secs = (performance.now() - t0) / 1000;
+      upload = ((size * 8) / secs / 1_000_000).toFixed(2);
+    } catch (e) {
+      console.error("Speedtest UPLOAD error:", e.message);
+    }
+
+    res.json({ ping, download, upload });
   } catch (err) {
-    console.error("GET /api/speedtest error:", err);
-    res.status(500).json({ error: "Speed test failed. Check server logs." });
+    console.error("GET /api/speedtest critical error:", err);
+    res.status(500).json({ error: "Speed test failed" });
   }
 });
 
