@@ -416,7 +416,7 @@ const WebRadio = () => {
             transitionKey={transitionKey}
           />
         </CarouselErrorBoundary>
-        <div className="flex items-center gap-2 w-full">
+        <div className="flex items-center gap-2 w-full relative z-10 -mt-8">
           <MiniAudioBars active={playing} />
           <div className="flex-1 min-w-0 space-y-0.5 text-center">
             <p className="text-[11px] text-foreground font-display tracking-wider truncate leading-tight drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]">
