@@ -216,7 +216,7 @@ const Index = () => {
           </ToolProjection>
         )}
         {pdfOpen && (
-          <ToolProjection title="IMG → PDF" onClose={() => setPdfOpen(false)}>
+          <ToolProjection title="IMG → PDF" onClose={() => setPdfOpen(false)} wide>
             <ImgToPdf />
           </ToolProjection>
         )}
