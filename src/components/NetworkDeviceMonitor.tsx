@@ -97,8 +97,17 @@ const NetworkDeviceMonitor = ({ asContent = false }: { asContent?: boolean }) =>
                   hover:border-accent/50 hover:bg-accent/10 hover:shadow-[0_0_10px_hsl(var(--accent)/0.15)]"
               >
                 <Wifi className="w-2.5 h-2.5 text-primary shrink-0" />
-                <span className="text-[9px] text-primary font-mono flex-1 tracking-wide">{d.ip}</span>
-                <span className="text-[8px] text-accent/70 font-mono">{d.mac}</span>
+                <a
+                  href={`http://${d.ip}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[9px] text-primary font-mono flex-1 tracking-wide
+                    hover:text-cyan-400 hover:drop-shadow-[0_0_6px_rgba(0,255,255,0.7)]
+                    hover:underline underline-offset-2 transition-all duration-150 cursor-pointer"
+                >
+                  {d.ip}
+                </a>
+                <span className="text-[8px] text-accent/70 font-mono tracking-wide">{d.mac}</span>
                 <span className="text-[7px] text-muted-foreground/60 uppercase tracking-wider">{d.type}</span>
               </div>
             ))}
