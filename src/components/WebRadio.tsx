@@ -300,21 +300,19 @@ const WebRadio = () => {
 
   return (
     <div
-      className="font-mono select-none overflow-hidden relative flex-1 min-h-0"
-      style={{
-        display: "grid",
-        gridTemplateRows: "auto minmax(0, 1fr) auto auto auto",
-        height: "100%",
-        width: "100%",
-      }}
+      className="font-mono select-none overflow-hidden relative flex-1 min-h-0 flex flex-col"
+      style={{ height: "100%", width: "100%" }}
     >
       {/* SVG Decorations */}
       <RadioSvgDecorations />
 
       <audio ref={audioRef} playsInline crossOrigin="anonymous" />
 
-      {/* ═══ ROW 1: Controles ═══ */}
-      <div className="px-2 pt-2 pb-1.5 flex items-center gap-2 border-b border-border/15 relative z-10">
+      {/* ═══ METADE SUPERIOR (50%): Controles + Visualizador ancorado na base ═══ */}
+      <div className="h-1/2 flex flex-col min-h-0 relative z-10">
+
+      {/* Controles */}
+      <div className="px-2 pt-2 pb-1.5 flex items-center gap-2 border-b border-border/15 shrink-0">
         <button
           onClick={togglePlay}
           className="relative w-10 h-10 shrink-0 border border-primary/40 bg-primary/[0.08] hover:bg-primary/[0.18] transition-all flex items-center justify-center"
@@ -381,8 +379,8 @@ const WebRadio = () => {
         </AnimatePresence>
       </div>
 
-      {/* ═══ ROW 2: Visualizador de Espectro (flex-grow, max-height constrained) ═══ */}
-      <div className="px-0 flex items-end justify-center gap-[1.5px] py-2 min-h-0 relative z-10" style={{ maxHeight: "35%" }}>
+      {/* Visualizador de Espectro — mt-auto ancora na base da metade superior */}
+      <div className="px-0 flex items-end justify-center gap-[1.5px] py-2 min-h-0 mt-auto flex-1" >
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
           const hue = 185 + (i / BAR_COUNT) * 135;
           return (
@@ -401,8 +399,13 @@ const WebRadio = () => {
         })}
       </div>
 
-      {/* ═══ ROW 3: Carrossel + Metadados (anchored to bottom) ═══ */}
-      <div className="px-1 flex flex-col items-center justify-center gap-1.5 border-t border-border/15 overflow-hidden relative z-10 py-3 mt-auto">
+      </div>{/* Fim da metade superior */}
+
+      {/* ═══ METADE INFERIOR (50%): Capas + Metadados + Histórico ═══ */}
+      <div className="h-1/2 flex flex-col min-h-0 relative z-10">
+
+      {/* Carrossel + Metadados */}
+      <div className="px-1 flex flex-col items-center justify-center gap-1.5 border-t border-border/15 overflow-hidden py-3 shrink-0">
         <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
         <CarouselErrorBoundary>
           <CoverFlowCarousel
@@ -429,17 +432,20 @@ const WebRadio = () => {
         </div>
       </div>
 
-      {/* ═══ ROW 4: Histórico de Transmissão ═══ */}
-      <div className="relative z-10 overflow-y-auto hud-scroll">
+      {/* Histórico de Transmissão — mt-auto ancora na base */}
+      <div className="overflow-y-auto hud-scroll mt-auto">
         <TrackHistory tracks={trackHistory} />
       </div>
 
-      {/* ═══ ROW 5: Footer decorativo ═══ */}
-      <div className="px-2 py-0.5 flex justify-between text-[5px] tracking-[0.2em] text-muted-foreground/15 uppercase border-t border-border/8 relative z-10">
+      {/* Footer decorativo */}
+      <div className="px-2 py-0.5 flex justify-between text-[5px] tracking-[0.2em] text-muted-foreground/15 uppercase border-t border-border/8 shrink-0">
         <span>CODEC: MP3</span>
         <span>LATENCY: LOW</span>
         <span>CIPHER: AES-256</span>
       </div>
+
+      </div>{/* Fim da metade inferior */}
+
     </div>
   );
 };
