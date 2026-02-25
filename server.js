@@ -222,10 +222,20 @@ app.get("/api/network/scan", (_req, res) => {
 });
 
 // ── GET /api/speedtest ────────────────────────────────────
-
-const speedTest = require("speedtest-net");
+// LAZY LOAD: speedtest-net usa lzma-native (DLL nativa) que pode crashar o Bun no Windows.
+// Carregamos sob demanda para não derrubar o servidor inteiro na inicialização.
 
 app.get("/api/speedtest", async (_req, res) => {
+  let speedTest;
+  try {
+    speedTest = require("speedtest-net");
+  } catch (loadErr) {
+    console.error("speedtest-net failed to load (native DLL issue):", loadErr.message);
+    return res.status(503).json({
+      error: "Speed test module unavailable. Native dependency (lzma-native) failed to load on this runtime. Try running the server with Node.js instead of Bun: node server.js",
+    });
+  }
+
   try {
     const testResult = await speedTest({ acceptLicense: true, acceptGdpr: true });
     res.json({
