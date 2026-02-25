@@ -4,6 +4,8 @@ const path = require("path");
 const fs = require("fs/promises");
 const fsSync = require("fs");
 
+const si = require("systeminformation");
+
 const app = express();
 const PORT = 4000;
 const ROOT_DIR = "D:\\FILES FOR WEB";
@@ -271,6 +273,53 @@ app.get("/api/speedtest", async (_req, res) => {
   } catch (err) {
     console.error("GET /api/speedtest critical error:", err);
     res.status(500).json({ error: "Speed test failed" });
+  }
+});
+
+// ── GET /api/system-info ──────────────────────────────────
+
+app.get("/api/system-info", async (_req, res) => {
+  try {
+    const [mem, cpuTemp, fsData, latency, netStats] = await Promise.all([
+      si.mem(),
+      si.cpuTemperature(),
+      si.fsSize(),
+      si.inetLatency().catch(() => null),
+      si.networkStats(),
+    ]);
+
+    // RAM
+    const ramTotal = +(mem.total / 1073741824).toFixed(1);
+    const ramUsed = +(mem.used / 1073741824).toFixed(1);
+    const ramPercent = Math.round((mem.used / mem.total) * 100);
+
+    // TEMP (Windows sem admin pode retornar null)
+    const temp = cpuTemp && cpuTemp.main ? Math.round(cpuTemp.main) : null;
+
+    // HD (drive principal)
+    const disk = fsData && fsData[0] ? fsData[0] : null;
+    const hdPercent = disk ? Math.round(disk.use) : null;
+    const hdTotal = disk ? +(disk.size / 1073741824).toFixed(0) : null;
+    const hdUsed = disk ? +(disk.used / 1073741824).toFixed(0) : null;
+
+    // PING
+    const ping = latency != null ? Math.round(latency) : null;
+
+    // REDE (tráfego atual)
+    const net = netStats && netStats[0] ? netStats[0] : null;
+    const rxMBs = net ? +(net.rx_sec / 1048576).toFixed(2) : 0;
+    const txMBs = net ? +(net.tx_sec / 1048576).toFixed(2) : 0;
+
+    res.json({
+      ram: { total: ramTotal, used: ramUsed, percent: ramPercent },
+      temp: temp != null ? temp : "N/A",
+      hd: { percent: hdPercent, total: hdTotal, used: hdUsed },
+      ping,
+      network: { download: rxMBs, upload: txMBs },
+    });
+  } catch (err) {
+    console.error("GET /api/system-info error:", err);
+    res.status(500).json({ error: "Failed to read system info" });
   }
 });
 
