@@ -221,6 +221,24 @@ app.get("/api/network/scan", (_req, res) => {
   });
 });
 
+// ── GET /api/speedtest ────────────────────────────────────
+
+const speedTest = require("speedtest-net");
+
+app.get("/api/speedtest", async (_req, res) => {
+  try {
+    const testResult = await speedTest({ acceptLicense: true, acceptGdpr: true });
+    res.json({
+      ping: Math.round(testResult.ping.latency),
+      download: (testResult.download.bandwidth / 125000).toFixed(2),
+      upload: (testResult.upload.bandwidth / 125000).toFixed(2),
+    });
+  } catch (err) {
+    console.error("GET /api/speedtest error:", err);
+    res.status(500).json({ error: "Speed test failed. Check server logs." });
+  }
+});
+
 // ── Start ────────────────────────────────────────────────
 
 app.listen(PORT, () => {
