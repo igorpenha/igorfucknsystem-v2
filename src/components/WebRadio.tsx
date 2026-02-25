@@ -115,6 +115,10 @@ const WebRadio = () => {
   const lastTrackRef = useRef("");
   const [trackHistory, setTrackHistory] = useState<TrackHistoryEntry[]>([]);
 
+  // Ref to hold latest track data — prevents stale closures from cloning current into previous
+  const trackRef = useRef(track);
+  useEffect(() => { trackRef.current = track; }, [track]);
+
   // ── Metadata polling ──
   useEffect(() => {
     if (!playing) return;
@@ -133,30 +137,34 @@ const WebRadio = () => {
           const cleanTitle = (data.title || "LIVE BROADCAST").split(/\r?\n/)[0].trim();
           const cleanArtist = (data.artist || "SCANNING...").split(/\r?\n/)[0].trim();
           const trackId = `${cleanArtist}-${cleanTitle}`;
-          setTrack(prev => {
-            if (prev.cover !== newCover) setCoverError(false);
-            if (lastTrackRef.current && lastTrackRef.current !== trackId) {
-              setTransitionKey(k => k + 1);
-              // Add PREVIOUS track to history (the one that just finished)
-              setTrackHistory(h => {
-                const entry: TrackHistoryEntry = {
-                  title: prev.title !== "Conectando..." ? prev.title : "UNKNOWN",
-                  artist: prev.artist !== "SCANNING..." ? prev.artist : "UNKNOWN",
-                  albumArt: prev.cover,
-                  timestamp: ts,
-                };
-                return [entry, ...h].slice(0, 3);
-              });
-            }
-            lastTrackRef.current = trackId;
-            return {
-              title: cleanTitle,
-              artist: cleanArtist,
-              album: data.album || "NO_DATA",
-              cover: newCover,
-              coverPrev: newCoverPrev,
-              coverNext: newCoverNext,
-            };
+
+          // Read latest track from ref to avoid stale closure
+          const prevTrack = trackRef.current;
+
+          if (prevTrack.cover !== newCover) setCoverError(false);
+
+          if (lastTrackRef.current && lastTrackRef.current !== trackId) {
+            setTransitionKey(k => k + 1);
+            // Add PREVIOUS track to history (the one that just finished)
+            setTrackHistory(h => {
+              const entry: TrackHistoryEntry = {
+                title: prevTrack.title !== "Conectando..." ? prevTrack.title : "UNKNOWN",
+                artist: prevTrack.artist !== "SCANNING..." ? prevTrack.artist : "UNKNOWN",
+                albumArt: prevTrack.cover,
+                timestamp: ts,
+              };
+              return [entry, ...h].slice(0, 3);
+            });
+          }
+          lastTrackRef.current = trackId;
+
+          setTrack({
+            title: cleanTitle,
+            artist: cleanArtist,
+            album: data.album || "NO_DATA",
+            cover: newCover,
+            coverPrev: newCoverPrev,
+            coverNext: newCoverNext,
           });
         }
       } catch {
@@ -295,7 +303,7 @@ const WebRadio = () => {
       className="font-mono select-none overflow-hidden relative flex-1 min-h-0"
       style={{
         display: "grid",
-        gridTemplateRows: "auto 1fr auto auto auto",
+        gridTemplateRows: "auto minmax(0, 1fr) auto auto auto",
         height: "100%",
         width: "100%",
       }}
@@ -373,8 +381,8 @@ const WebRadio = () => {
         </AnimatePresence>
       </div>
 
-      {/* ═══ ROW 2: Visualizador de Espectro (flex-grow) ═══ */}
-      <div className="px-0 flex items-end justify-center gap-[1.5px] py-2 min-h-0 relative z-10">
+      {/* ═══ ROW 2: Visualizador de Espectro (flex-grow, max-height constrained) ═══ */}
+      <div className="px-0 flex items-end justify-center gap-[1.5px] py-2 min-h-0 relative z-10" style={{ maxHeight: "35%" }}>
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
           const hue = 185 + (i / BAR_COUNT) * 135;
           return (
@@ -393,8 +401,8 @@ const WebRadio = () => {
         })}
       </div>
 
-      {/* ═══ ROW 3: Carrossel + Metadados ═══ */}
-      <div className="px-1 flex flex-col items-center justify-center gap-1.5 border-t border-border/15 overflow-hidden relative z-10 py-3">
+      {/* ═══ ROW 3: Carrossel + Metadados (anchored to bottom) ═══ */}
+      <div className="px-1 flex flex-col items-center justify-center gap-1.5 border-t border-border/15 overflow-hidden relative z-10 py-3 mt-auto">
         <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
         <CarouselErrorBoundary>
           <CoverFlowCarousel
