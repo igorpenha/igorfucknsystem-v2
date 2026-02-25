@@ -2,15 +2,36 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
 
-const TEST_STREAMS: Record<number, string> = {
-  0: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
-  1: "https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8",
-  2: "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8",
-};
+const CAMERA_URLS: (string | null)[] = [
+  "http://192.168.0.57:3000/ch_cam1.m3u8",       // CAM 01
+  "http://192.168.0.57:3000/ch_cam2.m3u8",       // CAM 02
+  "http://192.168.0.57:3000/dvr1_cam1.m3u8",     // CAM 03
+  "http://192.168.0.57:3000/dvr1_cam2.m3u8",     // CAM 04
+  "http://192.168.0.57:3000/dvr1_cam3.m3u8",     // CAM 05
+  "http://192.168.0.57:3000/dvr1_cam4.m3u8",     // CAM 06
+  "http://192.168.0.57:3000/dvr1_cam5.m3u8",     // CAM 07
+  "http://192.168.0.57:3000/dvr1_cam7.m3u8",     // CAM 08
+  "http://192.168.0.57:3000/dvr1_cam8.m3u8",     // CAM 09
+  "http://192.168.0.57:3000/dvr1_cam9.m3u8",     // CAM 10
+  "http://192.168.0.57:3000/dvr1_cam10.m3u8",    // CAM 11
+  "http://192.168.0.57:3000/dvr1_cam17.m3u8",    // CAM 12
+  "http://192.168.0.57:3000/dvr2_cam1.m3u8",     // CAM 13
+  "http://192.168.0.57:3000/dvr2_cam3.m3u8",     // CAM 14
+  "http://192.168.0.57:3000/dvr2_cam5.m3u8",     // CAM 15
+  "http://192.168.0.57:3000/dvr2_cam11.m3u8",    // CAM 16
+  "http://192.168.0.57:3000/dvr2_cam12.m3u8",    // CAM 17
+  "http://192.168.0.57:3000/dvr2_cam13.m3u8",    // CAM 18
+  "http://192.168.0.57:3000/dvr2_cam14.m3u8",    // CAM 19
+  "http://192.168.0.57:3000/dvr2_cam15.m3u8",    // CAM 20
+  "http://192.168.0.57:3000/dvr3_cam1.m3u8",     // CAM 21
+  "http://192.168.0.57:3000/dvr3_cam2.m3u8",     // CAM 22
+  null,                                           // CAM 23 - Reserva
+  null,                                           // CAM 24 - Reserva
+];
 
-const CAMERAS = Array.from({ length: 24 }, (_, i) => ({
+const CAMERAS = CAMERA_URLS.map((url, i) => ({
   label: `CAM ${String(i + 1).padStart(2, "0")}`,
-  url: TEST_STREAMS[i] ?? null,
+  url,
 }));
 
 const ROTATION_INTERVAL = 60000;
@@ -42,8 +63,8 @@ const NoSignalPlaceholder = () => (
       transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
       className="text-center z-10"
     >
-      <div className="text-destructive text-sm font-display tracking-[0.4em] mb-1">NO SIGNAL</div>
-      <div className="text-muted-foreground/40 text-[8px] tracking-[0.3em]">FEED DESCONECTADO</div>
+      <div className="text-destructive text-sm font-display tracking-[0.4em] mb-1">SEM SINAL</div>
+      <div className="text-muted-foreground/40 text-[8px] tracking-[0.3em]">CONEXÃO LOCAL EXIGIDA</div>
     </motion.div>
   </div>
 );
