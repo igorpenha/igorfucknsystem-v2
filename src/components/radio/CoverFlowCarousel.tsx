@@ -54,8 +54,8 @@ const SideCover = ({
         height: 36,
         opacity: 0.25,
         transform: "scaleY(-1)",
-        maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 80%)",
-        WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 80%)",
+        maskImage: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 80%)",
+        WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 80%)",
         clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)",
       }}
     >
@@ -163,8 +163,8 @@ const CoverFlowCarousel = ({
             height: 50,
             opacity: 0.2,
             transform: "scaleY(-1)",
-            maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 70%)",
-            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 70%)",
+            maskImage: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 70%)",
+            WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 70%)",
             clipPath: "polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%)",
           }}
         >
