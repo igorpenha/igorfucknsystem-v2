@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import MatrixRain from "./MatrixRain";
+import SpaceBackground from "./SpaceBackground";
 
 const MASTER_KEY = import.meta.env.VITE_MASTER_KEY ?? "";
 const SESSION_KEY = "ifs_auth_token";
@@ -18,13 +18,6 @@ const LoginFirewall = ({ children }: Props) => {
   const [code, setCode] = useState("");
   const [denied, setDenied] = useState(false);
   const [granted, setGranted] = useState(false);
-  const [scanline, setScanline] = useState(true);
-
-  // Blinking scanline
-  useEffect(() => {
-    const id = setInterval(() => setScanline((v) => !v), 80);
-    return () => clearInterval(id);
-  }, []);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -57,68 +50,66 @@ const LoginFirewall = ({ children }: Props) => {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8 }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center"
-          style={{ background: "#000" }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-background"
         >
-          <MatrixRain />
+          <SpaceBackground />
 
-          {/* Scanlines overlay */}
+          {/* Scanlines overlay — static, no animation */}
           <div
-            className="fixed inset-0 z-[1] pointer-events-none opacity-[0.03]"
+            className="fixed inset-0 z-[1] pointer-events-none opacity-[0.04]"
             style={{
               background:
-                "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)",
+                "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--foreground) / 0.04) 2px, hsl(var(--foreground) / 0.04) 4px)",
             }}
           />
 
-          {/* Denied flash */}
+          {/* Denied red flash */}
           <AnimatePresence>
             {denied && (
               <motion.div
                 initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 0.3, 0, 0.2, 0] }}
-                transition={{ duration: 0.6 }}
-                className="fixed inset-0 z-[2] bg-red-600 pointer-events-none"
+                animate={{ opacity: [0, 0.25, 0, 0.15, 0] }}
+                transition={{ duration: 0.5 }}
+                className="fixed inset-0 z-[2] pointer-events-none"
+                style={{ background: "hsl(0 80% 45%)" }}
               />
             )}
           </AnimatePresence>
 
-          {/* Terminal container */}
+          {/* Terminal container — static by default, shakes only on denied */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={
+              denied
+                ? { opacity: 1, y: 0, x: [0, -6, 6, -4, 4, 0] }
+                : { opacity: 1, y: 0, x: 0 }
+            }
+            transition={denied ? { duration: 0.4 } : { duration: 0.5, delay: 0.2 }}
             className="relative z-10 w-full max-w-lg mx-4"
           >
             <div
-              className="border rounded-sm p-6 md:p-8"
+              className="border border-border rounded-sm p-6 md:p-8"
               style={{
-                background: "rgba(0, 0, 0, 0.85)",
-                borderColor: "hsl(140 60% 30% / 0.5)",
+                background: "hsl(var(--background) / 0.88)",
+                backdropFilter: "blur(20px)",
                 boxShadow:
-                  "0 0 40px hsl(140 100% 30% / 0.1), inset 0 0 60px rgba(0,0,0,0.5), 0 0 1px hsl(140 100% 50% / 0.3)",
+                  "0 0 40px hsl(var(--primary) / 0.08), inset 0 0 60px hsl(var(--background) / 0.5), 0 0 1px hsl(var(--primary) / 0.25)",
               }}
             >
               {/* Header */}
               <div className="mb-6 space-y-2">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span
-                    className="ml-2 text-[9px] tracking-[0.3em] font-mono"
-                    style={{ color: "hsl(140 60% 45%)" }}
-                  >
+                  <div className="w-2 h-2 rounded-full bg-destructive" />
+                  <div className="w-2 h-2 rounded-full bg-accent" />
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <span className="ml-2 text-[9px] tracking-[0.3em] font-mono text-muted-foreground">
                     FIREWALL://TERMINAL
                   </span>
                 </div>
 
                 <h1
-                  className="font-mono text-sm md:text-base tracking-[0.15em] font-bold"
-                  style={{
-                    color: "hsl(140 100% 55%)",
-                    textShadow: "0 0 12px hsl(140 100% 50% / 0.5)",
-                  }}
+                  className="font-mono text-sm md:text-base tracking-[0.15em] font-bold text-primary"
+                  style={{ textShadow: "0 0 12px hsl(var(--primary) / 0.5)" }}
                 >
                   SISTEMA DE DEFESA PERIMETRAL
                 </h1>
@@ -129,14 +120,13 @@ const LoginFirewall = ({ children }: Props) => {
                   ██ ACESSO RESTRITO ██
                 </p>
 
-                <div
-                  className="font-mono text-[9px] leading-relaxed mt-3 space-y-0.5"
-                  style={{ color: "hsl(140 40% 40%)" }}
-                >
+                <div className="font-mono text-[9px] leading-relaxed mt-3 space-y-0.5 text-muted-foreground">
                   <p>&gt; PROTOCOLO DE SEGURANÇA NÍVEL 5 ATIVO</p>
                   <p>&gt; CRIPTOGRAFIA AES-256 VERIFICADA</p>
-                  <p>&gt; AGUARDANDO CREDENCIAL DO OPERADOR...</p>
-                  {scanline && <span className="inline-block w-1.5 h-3 bg-green-500/70" />}
+                  <p>
+                    &gt; AGUARDANDO CREDENCIAL DO OPERADOR...
+                    <span className="inline-block w-1.5 h-3 ml-1 bg-primary/70 animate-pulse" />
+                  </p>
                 </div>
               </div>
 
@@ -149,25 +139,18 @@ const LoginFirewall = ({ children }: Props) => {
                     className="text-center py-8 space-y-3"
                   >
                     <motion.p
-                      className="font-mono text-lg font-bold tracking-[0.2em]"
-                      style={{
-                        color: "hsl(140 100% 55%)",
-                        textShadow: "0 0 20px hsl(140 100% 50% / 0.6)",
-                      }}
+                      className="font-mono text-lg font-bold tracking-[0.2em] text-primary"
+                      style={{ textShadow: "0 0 20px hsl(var(--primary) / 0.6)" }}
                       animate={{ opacity: [1, 0.6, 1] }}
                       transition={{ repeat: Infinity, duration: 1 }}
                     >
                       ACESSO CONCEDIDO
                     </motion.p>
-                    <p
-                      className="font-mono text-[10px] tracking-[0.3em]"
-                      style={{ color: "hsl(140 60% 45%)" }}
-                    >
+                    <p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground">
                       BEM-VINDO, ARQUITETO
                     </p>
                     <motion.div
-                      className="w-full h-0.5 mt-4 rounded-full"
-                      style={{ background: "hsl(140 100% 50%)" }}
+                      className="w-full h-0.5 mt-4 rounded-full bg-primary"
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
                       transition={{ duration: 1.5 }}
@@ -175,12 +158,8 @@ const LoginFirewall = ({ children }: Props) => {
                   </motion.div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Input */}
                     <div className="space-y-1.5">
-                      <label
-                        className="font-mono text-[9px] tracking-[0.25em] block"
-                        style={{ color: "hsl(140 50% 45%)" }}
-                      >
+                      <label className="font-mono text-[9px] tracking-[0.25em] block text-muted-foreground">
                         CÓDIGO DE ACESSO TÁTICO
                       </label>
                       <input
@@ -188,29 +167,27 @@ const LoginFirewall = ({ children }: Props) => {
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
                         autoFocus
-                        className="w-full font-mono text-sm px-3 py-2.5 rounded-none outline-none transition-all duration-200"
+                        className="w-full font-mono text-sm px-3 py-2.5 rounded-none outline-none transition-all duration-200 bg-background/50 text-primary border border-border focus:border-primary/50"
                         style={{
-                          background: "rgba(0, 255, 100, 0.03)",
-                          border: `1px solid ${denied ? "hsl(0 80% 50% / 0.7)" : "hsl(140 60% 30% / 0.4)"}`,
-                          color: "hsl(140 100% 65%)",
-                          caretColor: "hsl(140 100% 55%)",
-                          boxShadow: denied
-                            ? "0 0 15px hsl(0 100% 50% / 0.2)"
-                            : "inset 0 0 20px rgba(0,255,100,0.02)",
+                          caretColor: "hsl(var(--primary))",
                           letterSpacing: "0.15em",
+                          boxShadow: denied
+                            ? "0 0 15px hsl(0 100% 50% / 0.15)"
+                            : "inset 0 0 20px hsl(var(--primary) / 0.03)",
+                          borderColor: denied ? "hsl(0 80% 50% / 0.6)" : undefined,
                         }}
                         placeholder="••••••••••"
                       />
                     </div>
 
-                    {/* Denied message */}
+                    {/* Denied message — appears temporarily */}
                     <AnimatePresence>
                       {denied && (
                         <motion.div
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: [0, -4, 4, -3, 3, 0] }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          transition={{ duration: 0.4 }}
+                          transition={{ duration: 0.3 }}
                           className="font-mono text-[10px] tracking-[0.2em] text-center py-1"
                           style={{
                             color: "hsl(0 100% 55%)",
@@ -222,23 +199,10 @@ const LoginFirewall = ({ children }: Props) => {
                       )}
                     </AnimatePresence>
 
-                    {/* Submit */}
                     <button
                       type="submit"
-                      className="w-full font-mono text-[10px] tracking-[0.3em] py-2.5 rounded-none transition-all duration-200 border"
-                      style={{
-                        background: "rgba(0, 255, 100, 0.05)",
-                        borderColor: "hsl(140 60% 30% / 0.4)",
-                        color: "hsl(140 100% 55%)",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "rgba(0, 255, 100, 0.12)";
-                        e.currentTarget.style.boxShadow = "0 0 20px hsl(140 100% 50% / 0.15)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "rgba(0, 255, 100, 0.05)";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
+                      className="w-full font-mono text-[10px] tracking-[0.3em] py-2.5 rounded-none transition-all duration-200 border border-border text-primary hover:bg-primary/10 hover:border-primary/40"
+                      style={{ background: "hsl(var(--primary) / 0.04)" }}
                     >
                       [ EXECUTAR VIOLAÇÃO ]
                     </button>
@@ -247,11 +211,8 @@ const LoginFirewall = ({ children }: Props) => {
               </AnimatePresence>
 
               {/* Footer */}
-              <div className="mt-6 pt-4" style={{ borderTop: "1px solid hsl(140 30% 20% / 0.3)" }}>
-                <p
-                  className="font-mono text-[8px] tracking-[0.2em] text-center"
-                  style={{ color: "hsl(140 30% 30%)" }}
-                >
+              <div className="mt-6 pt-4 border-t border-border/30">
+                <p className="font-mono text-[8px] tracking-[0.2em] text-center text-muted-foreground/50">
                   IGOR FUCKN SYSTEM // FIREWALL v2.0 // ENCRYPTED TUNNEL ACTIVE
                 </p>
               </div>
