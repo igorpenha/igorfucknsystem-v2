@@ -9,7 +9,7 @@ import NetworkDeviceMonitor from "@/components/NetworkDeviceMonitor";
 import ToolProjection from "@/components/ToolProjection";
 import WebRadio from "@/components/WebRadio";
 import InfoWidgets from "@/components/InfoWidgets";
-import FucknChat from "@/components/FucknChat";
+import SecurityCameraPanel from "@/components/SecurityCameraPanel";
 import FileMenu from "@/components/FileMenu";
 import FileViewer from "@/components/FileViewer";
 import SpaceBackground from "@/components/SpaceBackground";
@@ -186,14 +186,10 @@ const Index = () => {
           </motion.div>
         </div>
 
-        {/* ═══ BOTTOM-CENTER: FUCKN CHAT ═══ */}
+        {/* ═══ BOTTOM-CENTER: CFTV MONITORING ═══ */}
         <div className="lg:col-span-6 lg:row-span-1 min-h-0 overflow-hidden">
           <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="h-full">
-            <HudPanel title="FUCKN CHAT" className="h-full overflow-hidden flex flex-col">
-              <div className="flex-1 min-h-0 rounded-sm" style={{ background: "hsl(230 20% 4% / 0.08)", backdropFilter: "blur(20px)" }}>
-                <FucknChat />
-              </div>
-            </HudPanel>
+            <SecurityCameraPanel />
           </motion.div>
         </div>
       </main>
