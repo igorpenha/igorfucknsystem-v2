@@ -34,9 +34,9 @@ const SideCover = ({
     <div
       className="overflow-hidden border border-border/30 transition-all duration-500 shrink-0"
       style={{
-        width: 56,
-        height: 56,
-        opacity: 0.5,
+        width: 80,
+        height: 80,
+        opacity: 0.55,
         clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)",
       }}
     >
@@ -50,8 +50,8 @@ const SideCover = ({
     <div
       className="overflow-hidden shrink-0 pointer-events-none"
       style={{
-        width: 56,
-        height: 28,
+        width: 80,
+        height: 36,
         opacity: 0.25,
         transform: "scaleY(-1)",
         maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 80%)",
