@@ -6,14 +6,10 @@ interface ToolProjectionProps {
   title: string;
   children: ReactNode;
   onClose: () => void;
+  wide?: boolean;
 }
 
-/**
- * Central projection panel for tools.
- * Diagonal glide animation from bottom-left tool drawer to center
- * with spring bounce and intense backdrop blur behind the panel.
- */
-const ToolProjection = ({ title, children, onClose }: ToolProjectionProps) => (
+const ToolProjection = ({ title, children, onClose, wide }: ToolProjectionProps) => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -21,7 +17,6 @@ const ToolProjection = ({ title, children, onClose }: ToolProjectionProps) => (
     transition={{ duration: 0.25 }}
     className="fixed z-50 inset-0 flex items-center justify-center"
   >
-    {/* Backdrop blur layer — no dark overlay, just blur */}
     <motion.div
       initial={{ backdropFilter: "blur(0px)" }}
       animate={{ backdropFilter: "blur(12px)" }}
@@ -31,7 +26,6 @@ const ToolProjection = ({ title, children, onClose }: ToolProjectionProps) => (
       onClick={onClose}
     />
 
-    {/* Floating panel with diagonal glide */}
     <motion.div
       initial={{ opacity: 0, scale: 0.15, x: "-42vw", y: "38vh" }}
       animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
@@ -43,12 +37,12 @@ const ToolProjection = ({ title, children, onClose }: ToolProjectionProps) => (
         mass: 0.7,
         restDelta: 0.5,
       }}
-      className="relative z-10 w-[440px] max-w-[92vw] max-h-[75vh] flex flex-col
+      className={`relative z-10 max-w-[92vw] max-h-[85vh] flex flex-col
         rounded-sm border border-accent/50
         bg-background/92 backdrop-blur-2xl
-        shadow-[0_0_80px_hsl(var(--accent)/0.2),0_0_30px_hsl(var(--accent)/0.12),inset_0_1px_0_hsl(var(--accent)/0.1)]"
+        shadow-[0_0_80px_hsl(var(--accent)/0.2),0_0_30px_hsl(var(--accent)/0.12),inset_0_1px_0_hsl(var(--accent)/0.1)]
+        ${wide ? "w-[720px]" : "w-[440px]"}`}
     >
-      {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-accent/25">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_6px_hsl(var(--accent)/0.6)] animate-pulse" />
@@ -67,7 +61,6 @@ const ToolProjection = ({ title, children, onClose }: ToolProjectionProps) => (
         </button>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto p-5 hud-scroll">
         {children}
       </div>
