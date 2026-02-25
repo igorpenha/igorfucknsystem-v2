@@ -4,7 +4,7 @@ const BASE_SPEED = 0.15;
 const MAX_SPEED = 18;
 const LERP_UP = 0.45;
 const LERP_DOWN = 0.012;
-const STAR_COUNT = 280;
+const STAR_COUNT = 140;
 
 const SpaceBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -40,7 +40,7 @@ const SpaceBackground = () => {
         x: (Math.random() - 0.5) * canvas.width * 2.5,
         y: (Math.random() - 0.5) * canvas.height * 2.5,
         z: Math.random() * 1000,
-        size: Math.random() * 2 + 0.5,
+        size: Math.random() * 1.2 + 0.3,
         opacity: Math.random() * 0.7 + 0.3,
       });
     }
@@ -88,7 +88,7 @@ const SpaceBackground = () => {
         const sx = (star.x / star.z) * 400 + cx;
         const sy = (star.y / star.z) * 400 + cy;
         const depth = 1 - star.z / 1000;
-        const r = depth * star.size * 2.8;
+        const r = depth * star.size * 1.8;
         const a = depth * star.opacity;
 
         if (streakMode) {
@@ -113,7 +113,7 @@ const SpaceBackground = () => {
 
             // Fade and thin towards tip
             const segAlpha = a * 0.4 * (1 - progress);
-            const segWidth = Math.max(r * (2.5 - progress * 2.2) * (1 + speedRatio), 0.2);
+            const segWidth = Math.max(r * (1.6 - progress * 1.4) * (1 + speedRatio * 0.6), 0.15);
 
             ctx.beginPath();
             ctx.moveTo(tsx, tsy);
@@ -131,7 +131,7 @@ const SpaceBackground = () => {
           ctx.moveTo(psx, psy);
           ctx.lineTo(sx, sy);
           ctx.strokeStyle = `rgba(240, 242, 248, ${a * (0.9 + speedRatio * 0.1)})`;
-          ctx.lineWidth = Math.max(r * (1.5 + speedRatio * 3), 0.8);
+          ctx.lineWidth = Math.max(r * (1.0 + speedRatio * 1.5), 0.4);
           ctx.stroke();
         }
 
