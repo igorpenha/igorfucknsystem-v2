@@ -2,9 +2,12 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import SpaceBackground from "./SpaceBackground";
 
-const MASTER_KEY = import.meta.env.VITE_MASTER_KEY ?? "";
+const MASTER_KEY = (import.meta.env.VITE_MASTER_KEY ?? "").trim();
 const SESSION_KEY = "ifs_auth_token";
 const TOKEN_VALUE = "ARCHITECT_GRANTED";
+
+// Debug: remove after confirming login works
+console.log("[FIREWALL] VITE_MASTER_KEY loaded:", MASTER_KEY ? `"${MASTER_KEY}" (${MASTER_KEY.length} chars)` : "⚠ EMPTY/UNDEFINED");
 
 export const isAuthenticated = () => localStorage.getItem(SESSION_KEY) === TOKEN_VALUE;
 export const logout = () => localStorage.removeItem(SESSION_KEY);
@@ -27,7 +30,9 @@ const LoginFirewall = ({ children }: Props) => {
         setTimeout(() => setDenied(false), 2000);
         return;
       }
-      if (code === MASTER_KEY) {
+      const input = code.trim();
+      console.log("[FIREWALL] Comparing:", JSON.stringify(input), "vs", JSON.stringify(MASTER_KEY));
+      if (input === MASTER_KEY) {
         setGranted(true);
         localStorage.setItem(SESSION_KEY, TOKEN_VALUE);
         setTimeout(() => setAuthed(true), 1800);
