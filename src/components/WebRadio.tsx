@@ -407,7 +407,7 @@ const WebRadio = () => {
         <CarouselErrorBoundary>
           <CoverFlowCarousel
             currentCover={coverError ? "" : track.cover}
-            prevCover={track.coverPrev}
+            prevCover={trackHistory.length > 0 ? trackHistory[0].albumArt || "" : ""}
             nextCover={track.coverNext}
             playing={playing}
             transitionKey={transitionKey}
