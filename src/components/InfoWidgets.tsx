@@ -1,4 +1,15 @@
+import { useState } from "react";
 import { HardDrive, Cpu, ArrowUp, ArrowDown, Network, MemoryStick, Activity } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+
+const widgets = [
+  { key: "hd", icon: HardDrive, label: "HD", value: "72%", color: "hsl(120,100%,45%)" },
+  { key: "temp", icon: Cpu, label: "TEMP.", value: "45°C", color: "hsl(15,100%,55%)" },
+  { key: "ram", icon: MemoryStick, label: "RAM", value: "6.2G", color: "hsl(260,100%,65%)" },
+  { key: "rede", icon: null, label: "REDE", value: null, color: "hsl(50,100%,50%)" },
+  { key: "ips", icon: Network, label: "IPS", value: "14", color: "hsl(50,100%,55%)" },
+  { key: "uptime", icon: Activity, label: "UPTIME", value: "72d", color: "hsl(160,100%,45%)" },
+] as const;
 
 const InfoWidgets = () => {
   return (
@@ -9,95 +20,78 @@ const InfoWidgets = () => {
           50% { filter: drop-shadow(0 0 18px var(--glow)) drop-shadow(0 0 36px var(--glow)) drop-shadow(0 0 8px var(--glow)) brightness(1.8) saturate(1.4); }
         }
       `}</style>
-      <div className="grid grid-cols-3 grid-rows-2 gap-0.5 h-full">
-        {/* HD */}
-        <div className="bg-muted/50 rounded-sm border border-border overflow-hidden flex flex-col">
-          <div className="px-1 py-0.5 border-b border-primary/20 bg-primary/[0.06] text-center">
-            <span className="text-[6px] font-display tracking-[0.2em] text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]">HD</span>
-          </div>
-          <div className="flex items-center gap-1 px-1.5 py-0.5 flex-1">
-            <HardDrive
-              className="w-3 h-3 shrink-0 text-[hsl(120,100%,45%)]"
-              style={{ "--glow": "hsl(120,100%,45%)", animation: "iconGlowIntense 2s ease-in-out infinite" } as React.CSSProperties}
-            />
-            <span className="text-[8px] font-display text-[hsl(120,100%,45%)]">72%</span>
-          </div>
-        </div>
-
-        {/* TEMP */}
-        <div className="bg-muted/50 rounded-sm border border-border overflow-hidden flex flex-col">
-          <div className="px-1 py-0.5 border-b border-primary/20 bg-primary/[0.06] text-center">
-            <span className="text-[6px] font-display tracking-[0.2em] text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]">TEMP.</span>
-          </div>
-          <div className="flex items-center gap-1 px-1.5 py-0.5 flex-1">
-            <Cpu
-              className="w-3 h-3 shrink-0 text-[hsl(15,100%,55%)]"
-              style={{ "--glow": "hsl(15,100%,55%)", animation: "iconGlowIntense 2s ease-in-out 0.5s infinite" } as React.CSSProperties}
-            />
-            <span className="text-[8px] font-display text-[hsl(15,100%,55%)]">45°C</span>
-          </div>
-        </div>
-
-        {/* RAM */}
-        <div className="bg-muted/50 rounded-sm border border-border overflow-hidden flex flex-col">
-          <div className="px-1 py-0.5 border-b border-primary/20 bg-primary/[0.06] text-center">
-            <span className="text-[6px] font-display tracking-[0.2em] text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]">RAM</span>
-          </div>
-          <div className="flex items-center gap-1 px-1.5 py-0.5 flex-1">
-            <MemoryStick
-              className="w-3 h-3 shrink-0 text-[hsl(260,100%,65%)]"
-              style={{ "--glow": "hsl(260,100%,65%)", animation: "iconGlowIntense 2s ease-in-out 0.3s infinite" } as React.CSSProperties}
-            />
-            <span className="text-[8px] font-display text-[hsl(260,100%,65%)]">6.2G</span>
-          </div>
-        </div>
-
-        {/* REDE */}
-        <div className="bg-muted/50 rounded-sm border border-border overflow-hidden flex flex-col">
-          <div className="px-1 py-0.5 border-b border-primary/20 bg-primary/[0.06] text-center">
-            <span className="text-[6px] font-display tracking-[0.2em] text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]">REDE</span>
-          </div>
-          <div className="flex items-center gap-1 px-1.5 py-0.5 flex-1">
-            <div className="flex flex-col gap-0">
-              <div className="flex items-center gap-0.5">
-                <ArrowUp className="w-2 h-2 text-accent" style={{ "--glow": "hsl(50,100%,50%)", animation: "iconGlowIntense 2s ease-in-out 1s infinite" } as React.CSSProperties} />
-                <span className="text-[7px] font-display text-accent">150M</span>
+      <div className="grid grid-cols-3 grid-rows-2 gap-1 h-full">
+        {widgets.map((w, i) => (
+          <Popover key={w.key}>
+            <PopoverTrigger asChild>
+              <button
+                className="bg-muted/40 rounded-sm border border-border/60 flex items-center justify-center
+                  hover:border-[var(--btn-color)] hover:bg-[var(--btn-color)]/10
+                  hover:shadow-[0_0_16px_var(--btn-color-alpha)]
+                  active:scale-90 active:brightness-75 active:translate-y-[1px]
+                  transition-all duration-150 cursor-pointer outline-none"
+                style={{
+                  "--btn-color": w.color,
+                  "--btn-color-alpha": w.color.replace(")", "/0.25)").replace("hsl(", "hsla("),
+                } as React.CSSProperties}
+              >
+                {w.key === "rede" ? (
+                  <div className="flex flex-col items-center gap-0">
+                    <ArrowUp
+                      className="w-3.5 h-3.5"
+                      style={{ color: w.color, "--glow": w.color, animation: `iconGlowIntense 2s ease-in-out ${i * 0.3}s infinite` } as React.CSSProperties}
+                    />
+                    <ArrowDown
+                      className="w-3.5 h-3.5"
+                      style={{ color: w.color, "--glow": w.color, animation: `iconGlowIntense 2s ease-in-out ${i * 0.3 + 0.3}s infinite` } as React.CSSProperties}
+                    />
+                  </div>
+                ) : (
+                  w.icon && (
+                    <w.icon
+                      className="w-5 h-5"
+                      style={{ color: w.color, "--glow": w.color, animation: `iconGlowIntense 2s ease-in-out ${i * 0.3}s infinite` } as React.CSSProperties}
+                    />
+                  )
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="top"
+              sideOffset={8}
+              className="w-auto min-w-[120px] p-0 border rounded-sm overflow-hidden"
+              style={{
+                background: "hsla(230,20%,6%,0.85)",
+                backdropFilter: "blur(20px)",
+                borderColor: w.color.replace(")", "/0.4)").replace("hsl(", "hsla("),
+                boxShadow: `0 0 20px ${w.color.replace(")", "/0.15)").replace("hsl(", "hsla(")}, inset 0 1px 0 ${w.color.replace(")", "/0.1)").replace("hsl(", "hsla(")}`,
+              }}
+            >
+              <div className="px-3 py-1.5 border-b text-center" style={{ borderColor: w.color.replace(")", "/0.2)").replace("hsl(", "hsla(") }}>
+                <span className="text-[9px] font-display tracking-[0.25em]" style={{ color: w.color }}>{w.label}</span>
               </div>
-              <div className="flex items-center gap-0.5">
-                <ArrowDown className="w-2 h-2 text-accent" style={{ "--glow": "hsl(50,100%,50%)", animation: "iconGlowIntense 2s ease-in-out 1.3s infinite" } as React.CSSProperties} />
-                <span className="text-[7px] font-display text-accent">420M</span>
+              <div className="flex items-center gap-2 px-3 py-2.5 justify-center">
+                {w.key === "rede" ? (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <ArrowUp className="w-3 h-3" style={{ color: w.color }} />
+                      <span className="text-sm font-display font-bold" style={{ color: w.color }}>150 Mbps</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <ArrowDown className="w-3 h-3" style={{ color: w.color }} />
+                      <span className="text-sm font-display font-bold" style={{ color: w.color }}>420 Mbps</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {w.icon && <w.icon className="w-4 h-4" style={{ color: w.color }} />}
+                    <span className="text-lg font-display font-bold" style={{ color: w.color }}>{w.value}</span>
+                  </>
+                )}
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* IPS */}
-        <div className="bg-muted/50 rounded-sm border border-border overflow-hidden flex flex-col">
-          <div className="px-1 py-0.5 border-b border-primary/20 bg-primary/[0.06] text-center">
-            <span className="text-[6px] font-display tracking-[0.2em] text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]">IPS</span>
-          </div>
-          <div className="flex items-center gap-1 px-1.5 py-0.5 flex-1">
-            <Network
-              className="w-3 h-3 shrink-0 text-[hsl(50,100%,55%)]"
-              style={{ "--glow": "hsl(50,100%,55%)", animation: "iconGlowIntense 2s ease-in-out 1.6s infinite" } as React.CSSProperties}
-            />
-            <span className="text-[8px] font-display text-[hsl(50,100%,55%)]">14</span>
-          </div>
-        </div>
-
-        {/* UPTIME */}
-        <div className="bg-muted/50 rounded-sm border border-border overflow-hidden flex flex-col">
-          <div className="px-1 py-0.5 border-b border-primary/20 bg-primary/[0.06] text-center">
-            <span className="text-[6px] font-display tracking-[0.2em] text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]">UPTIME</span>
-          </div>
-          <div className="flex items-center gap-1 px-1.5 py-0.5 flex-1">
-            <Activity
-              className="w-3 h-3 shrink-0 text-[hsl(160,100%,45%)]"
-              style={{ "--glow": "hsl(160,100%,45%)", animation: "iconGlowIntense 2s ease-in-out 1.9s infinite" } as React.CSSProperties}
-            />
-            <span className="text-[8px] font-display text-[hsl(160,100%,45%)]">72d</span>
-          </div>
-        </div>
+            </PopoverContent>
+          </Popover>
+        ))}
       </div>
     </>
   );
