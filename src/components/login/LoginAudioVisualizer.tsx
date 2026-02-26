@@ -59,9 +59,13 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
   const bpmDetector = useMemo(() => new BPMDetector(), []);
   const smoothBands = useRef({ bass: 0, mid: 0, treble: 0, bpm: 0 });
 
-  const colorCyan = useMemo(() => new THREE.Color("hsl(190, 100%, 50%)"), []);
-  const colorYellow = useMemo(() => new THREE.Color("hsl(50, 100%, 50%)"), []);
+  const brandColors = useMemo(() => [
+    new THREE.Color("hsl(190, 100%, 55%)"),  // Ciano
+    new THREE.Color("hsl(320, 100%, 55%)"),  // Magenta
+    new THREE.Color("hsl(50, 100%, 55%)"),   // Amarelo
+  ], []);
   const tempColor = useMemo(() => new THREE.Color(), []);
+  const tempColor2 = useMemo(() => new THREE.Color(), []);
 
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
@@ -113,11 +117,17 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
 
-      // Color shifts: cyan ↔ yellow based on BPM energy
-      const bpmMix = Math.min(1, s.bpm * 1.5 + s.bass * 0.3);
-      tempColor.copy(colorCyan);
-      tempColor.lerp(colorYellow, bpmMix);
-      // Vertical fade affects brightness too
+      // Moving gradient: 3 brand colors flow across the grid
+      const gradientSpeed = t * 0.3;
+      const gradientPos = (nx + nz * 0.5 + gradientSpeed) % 3;
+      const idx0 = Math.floor(gradientPos) % 3;
+      const idx1 = (idx0 + 1) % 3;
+      const frac = gradientPos - Math.floor(gradientPos);
+      // Smooth interpolation between adjacent brand colors
+      tempColor.copy(brandColors[idx0]);
+      tempColor2.copy(brandColors[idx1]);
+      tempColor.lerp(tempColor2, frac);
+      // Vertical fade affects brightness only (preserve the existing fade)
       tempColor.multiplyScalar(0.4 + nz * 0.6 + s.bass * 0.3);
       meshRef.current.setColorAt(i, tempColor);
     }
