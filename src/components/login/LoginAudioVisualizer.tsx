@@ -42,11 +42,11 @@ class BPMDetector {
 }
 
 /* ── Particle Wave Mesh ── */
-const COLS = 80;
-const ROWS = 30;
+const COLS = 120;
+const ROWS = 40;
 const COUNT = COLS * ROWS;
-const SPREAD_X = 12;
-const SPREAD_Z = 4;
+const SPREAD_X = 24;
+const SPREAD_Z = 10;
 
 interface WaveProps {
   analyserRef: React.RefObject<AnalyserNode | null>;
@@ -75,9 +75,9 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
       bands = getFrequencyBands(dataArray);
     }
 
-    // Smooth
+    // Smooth with heavier damping for subtlety
     const s = smoothBands.current;
-    const lerp = 0.18;
+    const lerp = 0.08;
     s.bass += (bands.bass - s.bass) * lerp;
     s.mid += (bands.mid - s.mid) * lerp;
     s.treble += (bands.treble - s.treble) * lerp;
@@ -86,32 +86,25 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
     for (let i = 0; i < COUNT; i++) {
       const col = i % COLS;
       const row = Math.floor(i / COLS);
-      const nx = col / (COLS - 1);      // 0..1
-      const nz = row / (ROWS - 1);      // 0..1
+      const nx = col / (COLS - 1);
+      const nz = row / (ROWS - 1);
 
       const x = (nx - 0.5) * SPREAD_X;
-      const z = (nz - 0.5) * SPREAD_Z - 1.5;
+      const z = (nz - 0.5) * SPREAD_Z;
 
-      // Wave equation driven by audio
-      const waveFreq = 2.5 + s.mid * 4;
-      const bassAmp = 0.15 + s.bass * 1.8;
-      const trebleDetail = s.treble * 1.2;
-      const bpmPunch = s.bpm * 1.5;
-
-      const wave1 = Math.sin(nx * waveFreq + t * (1 + s.mid * 2)) * bassAmp;
-      const wave2 = Math.sin(nz * 3 + t * 1.5 + nx * 2) * 0.1 * (1 + trebleDetail);
-      const wave3 = Math.cos((nx + nz) * 4 + t * 0.8) * 0.08;
-      const bpmWave = Math.sin(nx * Math.PI * 2 + t * 8) * bpmPunch * Math.exp(-Math.abs(nx - 0.5) * 3);
+      // Gentle base wave + subtle audio reaction
+      const wave1 = Math.sin(nx * 3 + t * 0.6) * (0.15 + s.bass * 0.35);
+      const wave2 = Math.sin(nz * 2.5 + t * 0.4 + nx * 1.5) * (0.08 + s.mid * 0.15);
+      const wave3 = Math.cos((nx + nz) * 2 + t * 0.3) * (0.05 + s.treble * 0.1);
+      const bpmWave = Math.sin(nx * Math.PI * 2 + t * 4) * s.bpm * 0.3;
 
       const y = wave1 + wave2 + wave3 + bpmWave;
 
       dummy.position.set(x, y, z);
 
-      // Scale particles by energy
-      const baseScale = 0.025;
-      const energyScale = 1 + s.bass * 0.8 + s.bpm * 2;
-      const edgeFade = 1 - Math.pow(Math.abs(nx - 0.5) * 2, 3) * 0.5;
-      const scale = baseScale * energyScale * edgeFade;
+      const baseScale = 0.02;
+      const energyScale = 1 + s.bass * 0.3 + s.bpm * 0.5;
+      const scale = baseScale * energyScale;
       dummy.scale.setScalar(scale);
 
       dummy.updateMatrix();
@@ -138,18 +131,12 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
   );
 };
 
-/* ── Canvas wrapper ── */
+/* ── Canvas wrapper — full page ── */
 const LoginAudioVisualizer = ({ analyserRef }: WaveProps) => {
   return (
-    <div className="w-full h-32 relative" style={{ marginTop: "-0.5rem" }}>
-      {/* Fade edges */}
-      <div className="absolute inset-0 z-10 pointer-events-none"
-        style={{
-          background: "linear-gradient(90deg, hsl(var(--background)) 0%, transparent 10%, transparent 90%, hsl(var(--background)) 100%)",
-        }}
-      />
+    <div className="absolute inset-0 z-[1] pointer-events-none">
       <Canvas
-        camera={{ position: [0, 2.2, 3.5], fov: 50, near: 0.1, far: 20 }}
+        camera={{ position: [0, 5, 8], fov: 55, near: 0.1, far: 40 }}
         dpr={[1, 1.5]}
         gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
         style={{ background: "transparent" }}

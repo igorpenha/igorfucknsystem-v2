@@ -358,10 +358,8 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
         </p>
       </motion.div>
 
-      {/* 3D Audio Visualizer - full width, below card */}
-      <div className="absolute bottom-0 left-0 right-0 z-[5]">
-        <LoginAudioVisualizer analyserRef={analyserNodeRef} />
-      </div>
+      {/* 3D Audio Visualizer - full page */}
+      <LoginAudioVisualizer analyserRef={analyserNodeRef} />
     </div>
   );
 };
