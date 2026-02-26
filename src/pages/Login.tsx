@@ -292,33 +292,17 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
           <div className="absolute top-0 left-0 right-0 h-px"
             style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.6), hsl(var(--secondary) / 0.6), hsl(var(--accent) / 0.4), transparent)" }} />
 
-          {/* Animated grid background inside card */}
-          <motion.div className="absolute inset-0 opacity-[0.08] pointer-events-none rounded-md overflow-hidden"
-            animate={{ backgroundPosition: ["0px 0px", "0px 60px"] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-            style={{
-              backgroundImage: "linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)",
-              backgroundSize: "60px 60px",
-            }} />
-          <motion.div className="absolute inset-0 opacity-[0.06] pointer-events-none rounded-md overflow-hidden"
-            animate={{ backgroundPosition: ["0px 0px", "60px 60px"] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-            style={{
-              backgroundImage: "linear-gradient(hsl(var(--secondary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--secondary)) 1px, transparent 1px)",
-              backgroundSize: "60px 60px",
-            }} />
+          {/* Horizontal scan line with fade trail */}
+          <motion.div className="absolute top-0 bottom-0 z-0 pointer-events-none"
+            style={{ width: "40px", background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.06), hsl(var(--primary) / 0.3), hsl(var(--primary) / 0.06), transparent)" }}
+            animate={{ left: ["-40px", "100%"] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }} />
 
-          {/* Horizontal scan line */}
-          <motion.div className="absolute top-0 bottom-0 w-px z-0 pointer-events-none"
-            style={{ background: "linear-gradient(180deg, transparent, hsl(var(--primary) / 0.35), transparent)" }}
-            animate={{ left: ["-5%", "105%"] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "linear" }} />
-
-          {/* Vertical scan line */}
-          <motion.div className="absolute left-0 right-0 h-px z-0 pointer-events-none"
-            style={{ background: "linear-gradient(90deg, transparent, hsl(var(--accent) / 0.3), transparent)" }}
-            animate={{ top: ["-5%", "105%"] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
+          {/* Vertical scan line with fade trail */}
+          <motion.div className="absolute left-0 right-0 z-0 pointer-events-none"
+            style={{ height: "40px", background: "linear-gradient(180deg, transparent, hsl(var(--accent) / 0.06), hsl(var(--accent) / 0.3), hsl(var(--accent) / 0.06), transparent)" }}
+            animate={{ top: ["-40px", "100%"] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }} />
 
           <GlitchLogo />
 
