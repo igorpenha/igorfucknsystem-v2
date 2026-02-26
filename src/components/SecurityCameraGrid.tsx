@@ -37,14 +37,20 @@ const GridCell = ({
     if (hlsRef.current) return; // already loaded
 
     const hls = new Hls({
-      enableWorker: false,
+      enableWorker: true,
       lowLatencyMode: true,
-      manifestLoadingTimeOut: 10000,
+      maxBufferLength: 1,
+      maxMaxBufferLength: 2,
+      maxBufferSize: 0,
+      maxBufferHole: 0.5,
+      manifestLoadingTimeOut: 8000,
       manifestLoadingMaxRetry: 1,
-      levelLoadingTimeOut: 10000,
+      levelLoadingTimeOut: 8000,
       levelLoadingMaxRetry: 1,
-      maxBufferLength: 5,
-      maxMaxBufferLength: 10,
+      liveSyncDurationCount: 1,
+      liveMaxLatencyDurationCount: 3,
+      highBufferWatchdogPeriod: 1,
+      capLevelToPlayerSize: true,
     });
 
     hls.loadSource(cam.url);
@@ -180,7 +186,14 @@ const GridCell = ({
           className="absolute inset-0 w-full h-full object-cover"
           muted
           playsInline
-          style={{ opacity: playing ? 1 : 0, transition: "opacity 0.3s" }}
+          style={{
+            opacity: playing ? 1 : 0,
+            transition: "opacity 0.3s",
+            maxWidth: "480px",
+            maxHeight: "360px",
+            width: "100%",
+            height: "100%",
+          }}
         />
       )}
     </div>
@@ -207,8 +220,15 @@ const ExpandedView = ({
     const hls = new Hls({
       enableWorker: true,
       lowLatencyMode: true,
+      maxBufferLength: 1,
+      maxMaxBufferLength: 2,
+      maxBufferSize: 0,
+      maxBufferHole: 0.5,
       manifestLoadingTimeOut: 8000,
       manifestLoadingMaxRetry: 2,
+      liveSyncDurationCount: 1,
+      liveMaxLatencyDurationCount: 3,
+      highBufferWatchdogPeriod: 1,
     });
 
     hls.loadSource(cam.url);

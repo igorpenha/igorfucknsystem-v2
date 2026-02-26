@@ -181,10 +181,17 @@ const SecurityCameraPanel = () => {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
+        maxBufferLength: 1,
+        maxMaxBufferLength: 2,
+        maxBufferSize: 0,
+        maxBufferHole: 0.5,
         manifestLoadingTimeOut: 8000,
         manifestLoadingMaxRetry: 2,
         levelLoadingTimeOut: 8000,
         levelLoadingMaxRetry: 2,
+        liveSyncDurationCount: 1,
+        liveMaxLatencyDurationCount: 3,
+        highBufferWatchdogPeriod: 1,
       });
 
       hls.loadSource(cam.url);
@@ -199,6 +206,19 @@ const SecurityCameraPanel = () => {
           setIsNoSignal(false);
         }
       });
+
+      // Live-edge catch-up: jump forward if >3s behind live
+      const catchUpInterval = setInterval(() => {
+        const v = videoRef.current;
+        if (v && v.buffered.length > 0) {
+          const liveEdge = v.buffered.end(v.buffered.length - 1);
+          if (liveEdge - v.currentTime > 3) {
+            v.currentTime = liveEdge - 0.5;
+          }
+        }
+      }, 2000);
+
+      hls.on(Hls.Events.DESTROYING, () => clearInterval(catchUpInterval));
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal && isMounted.current) {
