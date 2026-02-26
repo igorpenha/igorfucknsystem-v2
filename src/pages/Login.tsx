@@ -292,17 +292,21 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
           <div className="absolute top-0 left-0 right-0 h-px"
             style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.6), hsl(var(--secondary) / 0.6), hsl(var(--accent) / 0.4), transparent)" }} />
 
-          {/* Horizontal scan line with fade trail */}
-          <motion.div className="absolute top-0 bottom-0 z-0 pointer-events-none"
-            style={{ width: "40px", background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.06), hsl(var(--primary) / 0.3), hsl(var(--primary) / 0.06), transparent)" }}
-            animate={{ left: ["-40px", "100%"] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }} />
+          {/* Horizontal scan lines (1 main + 3 trailing) */}
+          {[0, 1, 2, 3].map(i => (
+            <motion.div key={`h-${i}`} className="absolute top-0 bottom-0 w-px z-0 pointer-events-none"
+              style={{ background: `linear-gradient(180deg, transparent, hsl(var(--primary) / ${i === 0 ? 0.4 : i === 1 ? 0.25 : i === 2 ? 0.12 : 0.04}), transparent)` }}
+              animate={{ left: ["-2%", "102%"] }}
+              transition={{ duration: 3.5, repeat: Infinity, ease: "linear", delay: i * 0.08 }} />
+          ))}
 
-          {/* Vertical scan line with fade trail */}
-          <motion.div className="absolute left-0 right-0 z-0 pointer-events-none"
-            style={{ height: "40px", background: "linear-gradient(180deg, transparent, hsl(var(--accent) / 0.06), hsl(var(--accent) / 0.3), hsl(var(--accent) / 0.06), transparent)" }}
-            animate={{ top: ["-40px", "100%"] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }} />
+          {/* Vertical scan lines (1 main + 3 trailing) — magenta */}
+          {[0, 1, 2, 3].map(i => (
+            <motion.div key={`v-${i}`} className="absolute left-0 right-0 h-px z-0 pointer-events-none"
+              style={{ background: `linear-gradient(90deg, transparent, hsl(320 100% 55% / ${i === 0 ? 0.4 : i === 1 ? 0.25 : i === 2 ? 0.12 : 0.04}), transparent)` }}
+              animate={{ top: ["-2%", "102%"] }}
+              transition={{ duration: 3.5, repeat: Infinity, ease: "linear", delay: i * 0.08 }} />
+          ))}
 
           <GlitchLogo />
 
