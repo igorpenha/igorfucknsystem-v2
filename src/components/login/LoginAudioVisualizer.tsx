@@ -59,9 +59,8 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
   const bpmDetector = useMemo(() => new BPMDetector(), []);
   const smoothBands = useRef({ bass: 0, mid: 0, treble: 0, bpm: 0 });
 
-  const colorPrimary = useMemo(() => new THREE.Color("hsl(190, 100%, 55%)"), []);
-  const colorAccent = useMemo(() => new THREE.Color("hsl(320, 100%, 55%)"), []);
-  const colorSecondary = useMemo(() => new THREE.Color("hsl(50, 100%, 55%)"), []);
+  const colorCyan = useMemo(() => new THREE.Color("hsl(190, 100%, 50%)"), []);
+  const colorYellow = useMemo(() => new THREE.Color("hsl(50, 100%, 50%)"), []);
   const tempColor = useMemo(() => new THREE.Color(), []);
 
   useFrame(({ clock }) => {
@@ -114,12 +113,10 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
 
-      // Color shifts with audio
-      const bassInfluence = Math.min(1, s.bass * 2.5);
-      const trebleInfluence = Math.min(1, s.treble * 2.5);
-      tempColor.copy(colorPrimary);
-      tempColor.lerp(colorAccent, bassInfluence * 0.7 + s.bpm * 0.5);
-      tempColor.lerp(colorSecondary, trebleInfluence * 0.4);
+      // Color shifts: cyan ↔ yellow based on BPM energy
+      const bpmMix = Math.min(1, s.bpm * 1.5 + s.bass * 0.3);
+      tempColor.copy(colorCyan);
+      tempColor.lerp(colorYellow, bpmMix);
       // Vertical fade affects brightness too
       tempColor.multiplyScalar(0.4 + nz * 0.6 + s.bass * 0.3);
       meshRef.current.setColorAt(i, tempColor);
