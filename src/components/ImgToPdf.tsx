@@ -96,8 +96,7 @@ const ImgToPdf = () => {
 
       doc.save("images-output.pdf");
       toast.success("PDF gerado com sucesso!");
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Erro ao gerar o PDF.");
     }
     setGenerating(false);
