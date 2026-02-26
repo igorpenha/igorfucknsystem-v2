@@ -16,7 +16,7 @@ import SpaceBackground from "@/components/SpaceBackground";
 import { AnimatePresence } from "framer-motion";
 import { fetchFiles, type FsEntry } from "@/services/fileSystemApi";
 import { toast } from "sonner";
-import { CalculatorIcon, Wifi, Gauge, FileImage } from "lucide-react";
+import { CalculatorIcon, Wifi, Gauge, FileImage, LogOut } from "lucide-react";
 import SpeedTest from "@/components/SpeedTest";
 import ImgToPdf from "@/components/ImgToPdf";
 
@@ -29,7 +29,7 @@ const fadeUp = {
   }),
 };
 
-const Index = () => {
+const Index = ({ onLogout }: { onLogout: () => void }) => {
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [files, setFiles] = useState<FsEntry[]>([]);
   const [totalSize, setTotalSize] = useState(0);
@@ -93,7 +93,16 @@ const Index = () => {
             </p>
           </div>
         </div>
-        <HudClock />
+        <div className="flex items-center gap-3">
+          <HudClock />
+          <div className="w-px h-5 bg-border/50" />
+          <button onClick={onLogout}
+            className="flex items-center gap-1.5 text-[9px] font-display tracking-[0.2em] text-muted-foreground hover:text-destructive transition-colors"
+            title="Logout">
+            <LogOut className="w-3.5 h-3.5" />
+            SAIR
+          </button>
+        </div>
       </header>
 
       {/* ═══ MAIN GRID ═══

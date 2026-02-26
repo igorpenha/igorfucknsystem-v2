@@ -20,6 +20,11 @@ const App = () => {
     setAuthed(true);
   };
 
+  const handleLogout = () => {
+    sessionStorage.removeItem("ifs-auth");
+    setAuthed(false);
+  };
+
   if (!authed) {
     return (
       <QueryClientProvider client={queryClient}>
@@ -39,7 +44,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Index onLogout={handleLogout} />} />
             <Route path="/print-source" element={<PrintSource />} />
             <Route path="/print-monitoring" element={<PrintMonitoring />} />
             <Route path="*" element={<NotFound />} />
