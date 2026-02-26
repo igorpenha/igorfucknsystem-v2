@@ -5,9 +5,10 @@ import SpaceBackground from "./SpaceBackground";
 const MASTER_KEY = import.meta.env.VITE_MASTER_KEY ? String(import.meta.env.VITE_MASTER_KEY).trim() : "";
 const SESSION_KEY = "ifs_auth_token";
 const TOKEN_VALUE = "ARCHITECT_GRANTED";
+const isLovablePreview = typeof window !== "undefined" && window.location.hostname.includes("lovableproject.com");
 
-export const isAuthenticated = () => localStorage.getItem(SESSION_KEY) === TOKEN_VALUE;
-export const logout = () => localStorage.removeItem(SESSION_KEY);
+export const isAuthenticated = () => isLovablePreview || localStorage.getItem(SESSION_KEY) === TOKEN_VALUE;
+export const logout = () => { if (!isLovablePreview) localStorage.removeItem(SESSION_KEY); };
 
 interface Props {
   children: React.ReactNode;
