@@ -279,25 +279,7 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
 
   return (
     <div className="fixed inset-0 bg-background flex flex-col items-center justify-center overflow-hidden z-50">
-      {/* Animated grid background */}
-      <div className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage: "linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }} />
-      <motion.div className="absolute inset-0 opacity-[0.02]"
-        animate={{ backgroundPosition: ["0px 0px", "60px 60px"] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-        style={{
-          backgroundImage: "linear-gradient(hsl(var(--secondary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--secondary)) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }} />
-
-      {/* Vertical scan line */}
-      <motion.div className="absolute top-0 bottom-0 w-px z-0"
-        style={{ background: "linear-gradient(180deg, transparent, hsl(var(--primary) / 0.2), transparent)" }}
-        animate={{ left: ["-5%", "105%"] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "linear" }} />
+      {/* Grid and scan moved inside login card */}
 
       <CircuitDecorations />
 
@@ -309,6 +291,26 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
           {/* Top glow line */}
           <div className="absolute top-0 left-0 right-0 h-px"
             style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.6), hsl(var(--secondary) / 0.6), hsl(var(--accent) / 0.4), transparent)" }} />
+
+          {/* Grid background inside card */}
+          <div className="absolute inset-0 opacity-[0.08] pointer-events-none rounded-md overflow-hidden"
+            style={{
+              backgroundImage: "linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)",
+              backgroundSize: "60px 60px",
+            }} />
+          <motion.div className="absolute inset-0 opacity-[0.05] pointer-events-none rounded-md overflow-hidden"
+            animate={{ backgroundPosition: ["0px 0px", "60px 60px"] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+            style={{
+              backgroundImage: "linear-gradient(hsl(var(--secondary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--secondary)) 1px, transparent 1px)",
+              backgroundSize: "60px 60px",
+            }} />
+
+          {/* Scan line inside card */}
+          <motion.div className="absolute top-0 bottom-0 w-px z-0 pointer-events-none"
+            style={{ background: "linear-gradient(180deg, transparent, hsl(var(--primary) / 0.35), transparent)" }}
+            animate={{ left: ["-5%", "105%"] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "linear" }} />
 
           <GlitchLogo />
 
