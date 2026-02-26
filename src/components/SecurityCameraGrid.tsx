@@ -394,7 +394,7 @@ const SecurityCameraGrid = ({ cameras, onClose }: SecurityCameraGridProps) => {
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 gap-[1px] h-full auto-rows-fr">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-[1px] h-full auto-rows-fr">
           {cameras.map((cam, i) => (
             <GridCell key={i} cam={cam} index={i} onExpand={setExpandedIndex} />
           ))}
