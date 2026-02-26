@@ -292,13 +292,15 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
           <div className="absolute top-0 left-0 right-0 h-px"
             style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.6), hsl(var(--secondary) / 0.6), hsl(var(--accent) / 0.4), transparent)" }} />
 
-          {/* Grid background inside card */}
-          <div className="absolute inset-0 opacity-[0.08] pointer-events-none rounded-md overflow-hidden"
+          {/* Animated grid background inside card */}
+          <motion.div className="absolute inset-0 opacity-[0.08] pointer-events-none rounded-md overflow-hidden"
+            animate={{ backgroundPosition: ["0px 0px", "0px 60px"] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
             style={{
               backgroundImage: "linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)",
               backgroundSize: "60px 60px",
             }} />
-          <motion.div className="absolute inset-0 opacity-[0.05] pointer-events-none rounded-md overflow-hidden"
+          <motion.div className="absolute inset-0 opacity-[0.06] pointer-events-none rounded-md overflow-hidden"
             animate={{ backgroundPosition: ["0px 0px", "60px 60px"] }}
             transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
             style={{
@@ -306,11 +308,17 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
               backgroundSize: "60px 60px",
             }} />
 
-          {/* Scan line inside card */}
+          {/* Horizontal scan line */}
           <motion.div className="absolute top-0 bottom-0 w-px z-0 pointer-events-none"
             style={{ background: "linear-gradient(180deg, transparent, hsl(var(--primary) / 0.35), transparent)" }}
             animate={{ left: ["-5%", "105%"] }}
             transition={{ duration: 5, repeat: Infinity, ease: "linear" }} />
+
+          {/* Vertical scan line */}
+          <motion.div className="absolute left-0 right-0 h-px z-0 pointer-events-none"
+            style={{ background: "linear-gradient(90deg, transparent, hsl(var(--accent) / 0.3), transparent)" }}
+            animate={{ top: ["-5%", "105%"] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
 
           <GlitchLogo />
 
