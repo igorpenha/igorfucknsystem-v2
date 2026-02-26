@@ -300,19 +300,13 @@
   background: linear-gradient(90deg, transparent, hsl(190 100% 50% / 0.6), hsl(320 100% 50% / 0.6), hsl(50 100% 50% / 0.4), transparent);
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
+/* Hide all scrollbars – keep scroll functionality */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-::-webkit-scrollbar-track {
-  background: hsl(230 20% 6%);
-}
-::-webkit-scrollbar-thumb {
-  background: hsl(190 100% 50% / 0.3);
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(190 100% 50% / 0.5);
+*::-webkit-scrollbar {
+  display: none;
 }
 
 /* Header diagonal shine sweep effect */
