@@ -7,7 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import PrintSource from "./pages/PrintSource";
 import PrintMonitoring from "./pages/PrintMonitoring";
-import LoginFirewall from "./components/LoginFirewall";
+
 
 const queryClient = new QueryClient();
 
@@ -17,14 +17,12 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <LoginFirewall>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/print-source" element={<PrintSource />} />
-            <Route path="/print-monitoring" element={<PrintMonitoring />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </LoginFirewall>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/print-source" element={<PrintSource />} />
+          <Route path="/print-monitoring" element={<PrintMonitoring />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
