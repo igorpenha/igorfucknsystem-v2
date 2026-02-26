@@ -3,37 +3,23 @@ import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
 import SecurityCameraGrid from "./SecurityCameraGrid";
 
-const CAMERA_URLS: (string | null)[] = [
-  "https://cctv.igorfucknsystem.com.br/ch_cam1.m3u8",       // CAM 01
-  "https://cctv.igorfucknsystem.com.br/ch_cam2.m3u8",       // CAM 02
-  "https://cctv.igorfucknsystem.com.br/dvr1_cam1.m3u8",     // CAM 03
-  "https://cctv.igorfucknsystem.com.br/dvr1_cam2.m3u8",     // CAM 04
-  "https://cctv.igorfucknsystem.com.br/dvr1_cam3.m3u8",     // CAM 05
-  "https://cctv.igorfucknsystem.com.br/dvr1_cam4.m3u8",     // CAM 06
-  "https://cctv.igorfucknsystem.com.br/dvr1_cam5.m3u8",     // CAM 07
-  "https://cctv.igorfucknsystem.com.br/dvr1_cam7.m3u8",     // CAM 08
-  "https://cctv.igorfucknsystem.com.br/dvr1_cam8.m3u8",     // CAM 09
-  "https://cctv.igorfucknsystem.com.br/dvr1_cam9.m3u8",     // CAM 10
-  "https://cctv.igorfucknsystem.com.br/dvr1_cam10.m3u8",    // CAM 11
-  "https://cctv.igorfucknsystem.com.br/dvr1_cam17.m3u8",    // CAM 12
-  "https://cctv.igorfucknsystem.com.br/dvr2_cam1.m3u8",     // CAM 13
-  "https://cctv.igorfucknsystem.com.br/dvr2_cam3.m3u8",     // CAM 14
-  "https://cctv.igorfucknsystem.com.br/dvr2_cam5.m3u8",     // CAM 15
-  "https://cctv.igorfucknsystem.com.br/dvr2_cam11.m3u8",    // CAM 16
-  "https://cctv.igorfucknsystem.com.br/dvr2_cam12.m3u8",    // CAM 17
-  "https://cctv.igorfucknsystem.com.br/dvr2_cam13.m3u8",    // CAM 18
-  "https://cctv.igorfucknsystem.com.br/dvr2_cam14.m3u8",    // CAM 19
-  "https://cctv.igorfucknsystem.com.br/dvr2_cam15.m3u8",    // CAM 20
-  "https://cctv.igorfucknsystem.com.br/dvr3_cam1.m3u8",     // CAM 21
-  "https://cctv.igorfucknsystem.com.br/dvr3_cam2.m3u8",     // CAM 22
-  null,                                           // CAM 23 - Reserva
-  null,                                           // CAM 24 - Reserva
+const CAMERAS = [
+  // DVR 0.4
+  { label: "CAM 01 (0.4)",  url: "https://cctv.igorfucknsystem.com.br/ch_cam1.m3u8" },
+  { label: "CAM 04 (0.4)",  url: "https://cctv.igorfucknsystem.com.br/ch_cam4.m3u8" },
+  { label: "CAM 06 (0.4)",  url: "https://cctv.igorfucknsystem.com.br/ch_cam6.m3u8" },
+  { label: "CAM 10 (0.4)",  url: "https://cctv.igorfucknsystem.com.br/ch_cam10.m3u8" },
+  { label: "CAM 17 (0.4)",  url: "https://cctv.igorfucknsystem.com.br/ch_cam17.m3u8" },
+  // DVR 0.94
+  { label: "CAM 11 (0.94)", url: "https://cctv.igorfucknsystem.com.br/ch_cam11.m3u8" },
+  { label: "CAM 12 (0.94)", url: "https://cctv.igorfucknsystem.com.br/ch_cam12.m3u8" },
+  { label: "CAM 13 (0.94)", url: "https://cctv.igorfucknsystem.com.br/ch_cam13.m3u8" },
+  // IP / Mobile
+  { label: "IP 0.3",        url: "https://cctv.igorfucknsystem.com.br/ch_cam03.m3u8" },
+  { label: "IP 0.9",        url: "https://cctv.igorfucknsystem.com.br/ch_cam09.m3u8" },
+  { label: "CAM PALCO",     url: "https://cctv.igorfucknsystem.com.br/ch_campalco.m3u8" },
+  { label: "CAM MOBILE",    url: "https://cctv.igorfucknsystem.com.br/ch_mobile.m3u8" },
 ];
-
-const CAMERAS = CAMERA_URLS.map((url, i) => ({
-  label: `CAM ${String(i + 1).padStart(2, "0")}`,
-  url,
-}));
 
 const ROTATION_INTERVAL = 60000;
 
