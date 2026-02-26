@@ -8,7 +8,6 @@ import NotFound from "./pages/NotFound";
 import PrintSource from "./pages/PrintSource";
 import PrintMonitoring from "./pages/PrintMonitoring";
 
-
 const queryClient = new QueryClient();
 
 const App = () => (

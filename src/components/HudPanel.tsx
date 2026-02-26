@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState, useRef } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 const HEX_CHARS = "0123456789ABCDEF";
 const randomHex = () => {

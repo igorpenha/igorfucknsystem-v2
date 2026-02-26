@@ -1,27 +1,5 @@
 import { useEffect, useState } from "react";
 
-export const HudDate = () => {
-  const [time, setTime] = useState(new Date());
-
-  useEffect(() => {
-    const interval = setInterval(() => setTime(new Date()), 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const date = time.toLocaleDateString("pt-BR", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-
-  return (
-    <div className="text-[10px] text-muted-foreground uppercase tracking-[0.3em]">
-      {date}
-    </div>
-  );
-};
-
 const HudClock = () => {
   const [time, setTime] = useState(new Date());
 

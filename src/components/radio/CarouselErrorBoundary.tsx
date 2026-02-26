@@ -10,8 +10,8 @@ class CarouselErrorBoundary extends Component<Props, State> {
     return { hasError: true };
   }
 
-  componentDidCatch(err: Error) {
-    console.warn("CarouselErrorBoundary caught:", err.message);
+  componentDidCatch() {
+    // silenced
   }
 
   render() {

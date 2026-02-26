@@ -230,8 +230,8 @@ const WebRadio = () => {
         frameRef.current = requestAnimationFrame(tick);
       };
       frameRef.current = requestAnimationFrame(tick);
-    } catch (e) {
-      console.warn("AudioContext init failed:", e);
+    } catch {
+      // AudioContext init failed — silent
     }
   }, []);
 
