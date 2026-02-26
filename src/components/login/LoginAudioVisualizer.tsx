@@ -1,4 +1,4 @@
-import { useRef, useMemo, useCallback } from "react";
+import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -24,7 +24,7 @@ const getFrequencyBands = (dataArray: Uint8Array) => {
 class BPMDetector {
   private history: number[] = [];
   private lastPeak = 0;
-  private threshold = 0.55;
+  private threshold = 0.4;
   energy = 0;
 
   update(bass: number, time: number) {
@@ -32,11 +32,11 @@ class BPMDetector {
     if (this.history.length > 30) this.history.shift();
     const avg = this.history.reduce((a, b) => a + b, 0) / this.history.length;
 
-    if (bass > avg * 1.4 && bass > this.threshold && time - this.lastPeak > 0.18) {
+    if (bass > avg * 1.3 && bass > this.threshold && time - this.lastPeak > 0.15) {
       this.lastPeak = time;
       this.energy = 1;
     }
-    this.energy *= 0.88;
+    this.energy *= 0.85;
     return this.energy;
   }
 }
@@ -45,8 +45,8 @@ class BPMDetector {
 const COLS = 120;
 const ROWS = 40;
 const COUNT = COLS * ROWS;
-const SPREAD_X = 24;
-const SPREAD_Z = 10;
+const SPREAD_X = 26;
+const SPREAD_Z = 12;
 
 interface WaveProps {
   analyserRef: React.RefObject<AnalyserNode | null>;
@@ -59,7 +59,6 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
   const bpmDetector = useMemo(() => new BPMDetector(), []);
   const smoothBands = useRef({ bass: 0, mid: 0, treble: 0, bpm: 0 });
 
-  // Color palette matching system theme
   const colorPrimary = useMemo(() => new THREE.Color("hsl(190, 100%, 55%)"), []);
   const colorAccent = useMemo(() => new THREE.Color("hsl(320, 100%, 55%)"), []);
   const colorSecondary = useMemo(() => new THREE.Color("hsl(50, 100%, 55%)"), []);
@@ -75,12 +74,11 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
       bands = getFrequencyBands(dataArray);
     }
 
-    // Smooth with heavier damping for subtlety
     const s = smoothBands.current;
-    const lerp = 0.08;
-    s.bass += (bands.bass - s.bass) * lerp;
-    s.mid += (bands.mid - s.mid) * lerp;
-    s.treble += (bands.treble - s.treble) * lerp;
+    // Faster lerp = more reactive
+    s.bass += (bands.bass - s.bass) * 0.25;
+    s.mid += (bands.mid - s.mid) * 0.2;
+    s.treble += (bands.treble - s.treble) * 0.22;
     s.bpm = bpmDetector.update(bands.bass, t);
 
     for (let i = 0; i < COUNT; i++) {
@@ -92,30 +90,38 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
       const x = (nx - 0.5) * SPREAD_X;
       const z = (nz - 0.5) * SPREAD_Z;
 
-      // Gentle base wave + subtle audio reaction
-      const wave1 = Math.sin(nx * 3 + t * 0.6) * (0.15 + s.bass * 0.35);
-      const wave2 = Math.sin(nz * 2.5 + t * 0.4 + nx * 1.5) * (0.08 + s.mid * 0.15);
-      const wave3 = Math.cos((nx + nz) * 2 + t * 0.3) * (0.05 + s.treble * 0.1);
-      const bpmWave = Math.sin(nx * Math.PI * 2 + t * 4) * s.bpm * 0.3;
+      // Stronger audio-driven waves
+      const bassAmp = 0.2 + s.bass * 1.2;
+      const midFreq = 3 + s.mid * 3;
+      const trebleDetail = 0.06 + s.treble * 0.5;
 
-      const y = wave1 + wave2 + wave3 + bpmWave;
+      const wave1 = Math.sin(nx * midFreq + t * (0.8 + s.mid)) * bassAmp;
+      const wave2 = Math.sin(nz * 3 + t * 1.2 + nx * 2) * trebleDetail;
+      const wave3 = Math.cos((nx + nz) * 2.5 + t * 0.5) * 0.08;
+      const bpmPunch = Math.sin(nx * Math.PI * 3 + t * 6) * s.bpm * 0.8;
+      const ripple = Math.sin(Math.sqrt(Math.pow(nx - 0.5, 2) + Math.pow(nz - 0.5, 2)) * 8 - t * 2) * s.bass * 0.3;
+
+      const y = wave1 + wave2 + wave3 + bpmPunch + ripple;
 
       dummy.position.set(x, y, z);
 
-      const baseScale = 0.02;
-      const energyScale = 1 + s.bass * 0.3 + s.bpm * 0.5;
-      const scale = baseScale * energyScale;
-      dummy.scale.setScalar(scale);
+      // Vertical fade: particles near the "back" (nz=0, top of screen) are smaller
+      const verticalFade = 0.3 + nz * 0.7;
+      const baseScale = 0.022;
+      const energyScale = 1 + s.bass * 0.6 + s.bpm * 1.2;
+      dummy.scale.setScalar(baseScale * energyScale * verticalFade);
 
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
 
-      // Color: bass=accent(pink), mid=primary(cyan), treble=secondary(gold)
-      const bassInfluence = Math.max(0, Math.min(1, s.bass * 2));
-      const trebleInfluence = Math.max(0, Math.min(1, s.treble * 2));
+      // Color shifts with audio
+      const bassInfluence = Math.min(1, s.bass * 2.5);
+      const trebleInfluence = Math.min(1, s.treble * 2.5);
       tempColor.copy(colorPrimary);
-      tempColor.lerp(colorAccent, bassInfluence * 0.6 + s.bpm * 0.4);
-      tempColor.lerp(colorSecondary, trebleInfluence * 0.3);
+      tempColor.lerp(colorAccent, bassInfluence * 0.7 + s.bpm * 0.5);
+      tempColor.lerp(colorSecondary, trebleInfluence * 0.4);
+      // Vertical fade affects brightness too
+      tempColor.multiplyScalar(0.4 + nz * 0.6 + s.bass * 0.3);
       meshRef.current.setColorAt(i, tempColor);
     }
 
@@ -126,7 +132,7 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
   return (
     <instancedMesh ref={meshRef} args={[undefined, undefined, COUNT]}>
       <sphereGeometry args={[1, 6, 6]} />
-      <meshBasicMaterial toneMapped={false} transparent opacity={0.85} />
+      <meshBasicMaterial toneMapped={false} transparent opacity={0.9} />
     </instancedMesh>
   );
 };
@@ -135,8 +141,14 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
 const LoginAudioVisualizer = ({ analyserRef }: WaveProps) => {
   return (
     <div className="absolute inset-0 z-[1] pointer-events-none">
+      {/* Vertical transparency: fades from top (dark) to visible at bottom */}
+      <div className="absolute inset-0 z-10 pointer-events-none"
+        style={{
+          background: "linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.85) 15%, hsl(var(--background) / 0.3) 45%, transparent 70%)",
+        }}
+      />
       <Canvas
-        camera={{ position: [0, 5, 8], fov: 55, near: 0.1, far: 40 }}
+        camera={{ position: [0, 5.5, 9], fov: 55, near: 0.1, far: 50 }}
         dpr={[1, 1.5]}
         gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
         style={{ background: "transparent" }}

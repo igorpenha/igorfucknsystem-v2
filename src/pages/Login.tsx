@@ -137,8 +137,15 @@ const MiniRadioPlayer = ({ onAnalyserReady }: { onAnalyserReady: (a: AnalyserNod
       const r = await fetch(METADATA_URL);
       if (!r.ok) return;
       const d = await r.json();
-      setTrack({ title: d.title || "Desconhecido", artist: d.artist || "" });
-      if (d.art) setArtUrl(d.art);
+      const rawTitle = (d.title || "Desconhecido").replace(/\r?\n.*/s, "").trim();
+      setTrack({ title: rawTitle, artist: d.artist || "" });
+      if (d.coverUrl) {
+        // Replace localhost with the real API base
+        const artSrc = d.coverUrl.replace(/^https?:\/\/localhost:\d+/, FILE_API_BASE_URL);
+        setArtUrl(artSrc);
+      } else if (d.art) {
+        setArtUrl(d.art);
+      }
     } catch { /* silent */ }
   }, []);
 
