@@ -2,44 +2,12 @@ import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-/* ── Frequency band splitter ── */
-const getFrequencyBands = (dataArray: Uint8Array) => {
-  const len = dataArray.length;
-  const bassEnd = Math.floor(len * 0.15);
-  const midEnd = Math.floor(len * 0.55);
-
-  let bass = 0, mid = 0, treble = 0;
-  for (let i = 0; i < bassEnd; i++) bass += dataArray[i];
-  for (let i = bassEnd; i < midEnd; i++) mid += dataArray[i];
-  for (let i = midEnd; i < len; i++) treble += dataArray[i];
-
-  bass /= bassEnd * 255;
-  mid /= (midEnd - bassEnd) * 255;
-  treble /= (len - midEnd) * 255;
-
-  return { bass, mid, treble };
+/* ── Simple audio energy detector ── */
+const getAudioEnergy = (dataArray: Uint8Array) => {
+  let sum = 0;
+  for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+  return sum / (dataArray.length * 255);
 };
-
-/* ── BPM peak detector ── */
-class BPMDetector {
-  private history: number[] = [];
-  private lastPeak = 0;
-  private threshold = 0.4;
-  energy = 0;
-
-  update(bass: number, time: number) {
-    this.history.push(bass);
-    if (this.history.length > 30) this.history.shift();
-    const avg = this.history.reduce((a, b) => a + b, 0) / this.history.length;
-
-    if (bass > avg * 1.3 && bass > this.threshold && time - this.lastPeak > 0.15) {
-      this.lastPeak = time;
-      this.energy = 1;
-    }
-    this.energy *= 0.85;
-    return this.energy;
-  }
-}
 
 /* ── Particle Wave Mesh ── */
 const COLS = 120;
@@ -56,8 +24,7 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const dataArray = useMemo(() => new Uint8Array(128), []);
-  const bpmDetector = useMemo(() => new BPMDetector(), []);
-  const smoothBands = useRef({ bass: 0, mid: 0, treble: 0, bpm: 0 });
+  const smoothEnergy = useRef(0);
 
   const brandColors = useMemo(() => [
     new THREE.Color("hsl(190, 100%, 55%)"),  // Ciano
@@ -71,18 +38,18 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
     if (!meshRef.current) return;
     const t = clock.getElapsedTime();
 
-    let bands = { bass: 0, mid: 0, treble: 0 };
+    // Detect audio energy (0-1)
+    let energy = 0;
     if (analyserRef.current) {
       analyserRef.current.getByteFrequencyData(dataArray);
-      bands = getFrequencyBands(dataArray);
+      energy = getAudioEnergy(dataArray);
     }
+    // Smooth energy transition
+    smoothEnergy.current += (energy - smoothEnergy.current) * 0.15;
+    const e = smoothEnergy.current;
 
-    const s = smoothBands.current;
-    // Faster lerp = more reactive
-    s.bass += (bands.bass - s.bass) * 0.25;
-    s.mid += (bands.mid - s.mid) * 0.2;
-    s.treble += (bands.treble - s.treble) * 0.22;
-    s.bpm = bpmDetector.update(bands.bass, t);
+    // Speed multiplier: idle = 1x, music playing = up to 3.5x
+    const speed = 1 + e * 2.5;
 
     for (let i = 0; i < COUNT; i++) {
       const col = i % COLS;
@@ -93,42 +60,33 @@ const ParticleWave = ({ analyserRef }: WaveProps) => {
       const x = (nx - 0.5) * SPREAD_X;
       const z = (nz - 0.5) * SPREAD_Z;
 
-      // Stronger audio-driven waves
-      const bassAmp = 0.2 + s.bass * 1.2;
-      const midFreq = 3 + s.mid * 3;
-      const trebleDetail = 0.06 + s.treble * 0.5;
+      // Static amplitude waves — only speed changes with music
+      const wave1 = Math.sin(nx * 3.5 + t * 0.6 * speed) * 0.3;
+      const wave2 = Math.sin(nz * 3 + t * 0.9 * speed + nx * 2) * 0.12;
+      const wave3 = Math.cos((nx + nz) * 2.5 + t * 0.4 * speed) * 0.08;
 
-      const wave1 = Math.sin(nx * midFreq + t * (0.8 + s.mid)) * bassAmp;
-      const wave2 = Math.sin(nz * 3 + t * 1.2 + nx * 2) * trebleDetail;
-      const wave3 = Math.cos((nx + nz) * 2.5 + t * 0.5) * 0.08;
-      const bpmPunch = Math.sin(nx * Math.PI * 3 + t * 6) * s.bpm * 0.8;
-      const ripple = Math.sin(Math.sqrt(Math.pow(nx - 0.5, 2) + Math.pow(nz - 0.5, 2)) * 8 - t * 2) * s.bass * 0.3;
-
-      const y = wave1 + wave2 + wave3 + bpmPunch + ripple;
+      const y = wave1 + wave2 + wave3;
 
       dummy.position.set(x, y, z);
 
-      // Vertical fade: particles near the "back" (nz=0, top of screen) are smaller
+      // Vertical fade only — no audio-driven scale
       const verticalFade = 0.3 + nz * 0.7;
-      const baseScale = 0.022;
-      const energyScale = 1 + s.bass * 0.6 + s.bpm * 1.2;
-      dummy.scale.setScalar(baseScale * energyScale * verticalFade);
+      dummy.scale.setScalar(0.022 * verticalFade);
 
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
 
-      // Moving gradient: 3 brand colors flow across the grid
-      const gradientSpeed = t * 0.3;
+      // Moving gradient: 3 brand colors — speed also affected by music
+      const gradientSpeed = t * (0.3 + e * 0.5);
       const gradientPos = (nx + nz * 0.5 + gradientSpeed) % 3;
       const idx0 = Math.floor(gradientPos) % 3;
       const idx1 = (idx0 + 1) % 3;
       const frac = gradientPos - Math.floor(gradientPos);
-      // Smooth interpolation between adjacent brand colors
       tempColor.copy(brandColors[idx0]);
       tempColor2.copy(brandColors[idx1]);
       tempColor.lerp(tempColor2, frac);
-      // Vertical fade affects brightness only (preserve the existing fade)
-      tempColor.multiplyScalar(0.4 + nz * 0.6 + s.bass * 0.3);
+      // Vertical fade brightness
+      tempColor.multiplyScalar(0.4 + nz * 0.6);
       meshRef.current.setColorAt(i, tempColor);
     }
 
