@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,9 +22,27 @@ const CAMERAS = [
   { label: "CAM MOBILE",    url: "https://cctv.igorfucknsystem.com.br/ch_mobile.m3u8" },
 ];
 
+const HLS_CONFIG_LOW_LATENCY: Hls.Config = {
+  enableWorker: true,
+  lowLatencyMode: true,
+  backBufferLength: 0,
+  maxBufferLength: 1, 
+  maxMaxBufferLength: 2, 
+  maxBufferSize: 1, 
+  maxBufferHole: 0.1,
+  liveSyncDurationCount: 1,
+  liveMaxLatencyDurationCount: 2, 
+  highBufferWatchdogPeriod: 1,
+  maxFragLookUpTolerance: 0,
+  manifestLoadingTimeOut: 5000,
+  manifestLoadingMaxRetry: 2,
+  levelLoadingTimeOut: 5000,
+  levelLoadingMaxRetry: 2,
+  capLevelToPlayerSize: true,
+};
+
 const ROTATION_INTERVAL = 60000;
 
-/* ── Tactical clock ── */
 const useLiveClock = () => {
   const [time, setTime] = useState(() => new Date());
   useEffect(() => {
@@ -33,10 +52,8 @@ const useLiveClock = () => {
   return time;
 };
 
-/* ── No-signal static noise (CSS only) ── */
 const NoSignalPlaceholder = () => (
   <div className="absolute inset-0 flex items-center justify-center z-[7]">
-    {/* Static noise via repeating gradient */}
     <div
       className="absolute inset-0 opacity-20"
       style={{
@@ -56,30 +73,22 @@ const NoSignalPlaceholder = () => (
   </div>
 );
 
-/* ── Tactical HUD overlay on video ── */
 const TacticalOverlay = ({ camIndex, clock }: { camIndex: number; clock: Date }) => {
   const ts = clock.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const ds = clock.toLocaleDateString("pt-BR");
 
   return (
     <div className="absolute inset-0 z-[8] pointer-events-none select-none">
-      {/* Corner crosshairs */}
-      {/* Top-left */}
       <div className="absolute top-3 left-3 w-5 h-5 border-t border-l border-primary/60" />
-      {/* Top-right */}
       <div className="absolute top-3 right-3 w-5 h-5 border-t border-r border-primary/60" />
-      {/* Bottom-left */}
       <div className="absolute bottom-3 left-3 w-5 h-5 border-b border-l border-primary/60" />
-      {/* Bottom-right */}
       <div className="absolute bottom-3 right-3 w-5 h-5 border-b border-r border-primary/60" />
 
-      {/* Center crosshair */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
         <div className="w-6 h-px bg-primary/20" />
         <div className="w-px h-6 bg-primary/20 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
       </div>
 
-      {/* REC indicator */}
       <div className="absolute top-2.5 left-8 flex items-center gap-1.5">
         <motion.div
           animate={{ opacity: [1, 0, 1] }}
@@ -89,14 +98,12 @@ const TacticalOverlay = ({ camIndex, clock }: { camIndex: number; clock: Date })
         <span className="text-[9px] font-mono text-destructive tracking-widest">REC</span>
       </div>
 
-      {/* LIVE badge */}
       <div className="absolute top-2.5 right-8">
         <span className="text-[8px] font-mono text-primary tracking-[0.3em] border border-primary/30 px-1.5 py-0.5 bg-primary/10">
           LIVE
         </span>
       </div>
 
-      {/* Bottom bar: cam label + timestamp */}
       <div className="absolute bottom-2.5 left-8 right-8 flex items-center justify-between">
         <span className="text-[9px] font-mono text-primary/70 tracking-widest">
           CAM-{String(camIndex + 1).padStart(2, "0")}
@@ -158,7 +165,6 @@ const SecurityCameraPanel = () => {
 
       const cam = CAMERAS[index];
 
-      // No URL → NO SIGNAL
       if (!cam.url) {
         setIsLoading(false);
         setIsStreamActive(false);
@@ -178,21 +184,7 @@ const SecurityCameraPanel = () => {
         return;
       }
 
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-        maxBufferLength: 1,
-        maxMaxBufferLength: 2,
-        maxBufferSize: 0,
-        maxBufferHole: 0.5,
-        manifestLoadingTimeOut: 8000,
-        manifestLoadingMaxRetry: 2,
-        levelLoadingTimeOut: 8000,
-        levelLoadingMaxRetry: 2,
-        liveSyncDurationCount: 1,
-        liveMaxLatencyDurationCount: 3,
-        highBufferWatchdogPeriod: 1,
-      });
+      const hls = new Hls(HLS_CONFIG_LOW_LATENCY);
 
       hls.loadSource(cam.url);
       hls.attachMedia(videoRef.current);
@@ -207,16 +199,15 @@ const SecurityCameraPanel = () => {
         }
       });
 
-      // Live-edge catch-up: jump forward if >3s behind live
       const catchUpInterval = setInterval(() => {
         const v = videoRef.current;
         if (v && v.buffered.length > 0) {
           const liveEdge = v.buffered.end(v.buffered.length - 1);
-          if (liveEdge - v.currentTime > 3) {
+          if (liveEdge - v.currentTime > 2) { // Reduzido de 3s para 2s
             v.currentTime = liveEdge - 0.5;
           }
         }
-      }, 2000);
+      }, 1000); // Verificação mais frequente
 
       hls.on(Hls.Events.DESTROYING, () => clearInterval(catchUpInterval));
 
@@ -286,7 +277,6 @@ const SecurityCameraPanel = () => {
       )}
     </AnimatePresence>
     <div className="hud-panel rounded-sm p-4 scanlines flex flex-col h-full min-h-0">
-      {/* Title bar */}
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border shrink-0">
         <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow" />
         <h3 className="font-display text-xs uppercase tracking-[0.25em] text-foreground text-glow">
@@ -301,7 +291,6 @@ const SecurityCameraPanel = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-3 flex-1 min-h-0">
-        {/* LEFT: Camera buttons */}
         <div className="lg:w-[35%] flex flex-col min-h-0">
           <div className="border border-border/50 rounded-sm p-1.5 flex-1 min-h-0 overflow-hidden">
             <div className="overflow-y-auto h-full pr-1 space-y-1 custom-scrollbar">
@@ -345,9 +334,7 @@ const SecurityCameraPanel = () => {
           </div>
         </div>
 
-        {/* RIGHT: Video Display */}
         <div className="lg:w-[65%] relative flex flex-col min-h-0">
-          {/* Neon border frame */}
           <div className="absolute inset-0 rounded-sm pointer-events-none z-10">
             <div className="absolute inset-0 rounded-sm border border-primary/30" />
             <div
@@ -363,7 +350,6 @@ const SecurityCameraPanel = () => {
             <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary/50 rounded-br-sm" />
           </div>
 
-          {/* Status LED */}
           <div className="absolute top-2 right-2 z-20 flex items-center gap-1.5">
             <div
               className={`w-2 h-2 rounded-full transition-colors ${
@@ -377,9 +363,7 @@ const SecurityCameraPanel = () => {
             </span>
           </div>
 
-          {/* Video container */}
           <div className="relative bg-muted/20 rounded-sm overflow-hidden crt-filter flex-1 min-h-0">
-            {/* Grid overlay */}
             <div
               className="absolute inset-0 pointer-events-none opacity-10 z-[5]"
               style={{
@@ -389,7 +373,6 @@ const SecurityCameraPanel = () => {
               }}
             />
 
-            {/* Scanline overlay */}
             <div
               className="absolute inset-0 pointer-events-none z-[6]"
               style={{
@@ -457,7 +440,6 @@ const SecurityCameraPanel = () => {
               ) : null}
             </AnimatePresence>
 
-            {/* Tactical HUD overlay — only when streaming */}
             {activeCamera !== null && hasStream && isStreamActive && (
               <TacticalOverlay camIndex={activeCamera} clock={clock} />
             )}
@@ -471,7 +453,6 @@ const SecurityCameraPanel = () => {
             />
           </div>
 
-          {/* Camera label */}
           {activeCamera !== null && (
             <div className="mt-1 flex items-center justify-between px-1 shrink-0">
               <span className="text-[9px] text-muted-foreground tracking-widest">
@@ -485,7 +466,6 @@ const SecurityCameraPanel = () => {
         </div>
       </div>
 
-      {/* Bottom controls */}
       <div className="flex gap-3 mt-2 pt-2 border-t border-border shrink-0">
         <button
           onClick={handleStopAll}

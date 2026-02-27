@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from "react";
+
+import { useState, useRef, useCallback, useEffect } from "react";
 import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Pause } from "lucide-react";
@@ -13,7 +14,25 @@ interface SecurityCameraGridProps {
   onClose: () => void;
 }
 
-/* ── Single grid cell with manual play/pause ── */
+const HLS_CONFIG_LOW_LATENCY: Hls.Config = {
+  enableWorker: true,
+  lowLatencyMode: true,
+  backBufferLength: 0,
+  maxBufferLength: 1, 
+  maxMaxBufferLength: 2, 
+  maxBufferSize: 1, 
+  maxBufferHole: 0.1,
+  liveSyncDurationCount: 1,
+  liveMaxLatencyDurationCount: 2, 
+  highBufferWatchdogPeriod: 1,
+  maxFragLookUpTolerance: 0,
+  manifestLoadingTimeOut: 5000,
+  manifestLoadingMaxRetry: 2,
+  levelLoadingTimeOut: 5000,
+  levelLoadingMaxRetry: 2,
+  capLevelToPlayerSize: true,
+};
+
 const GridCell = ({
   cam,
   index,
@@ -34,25 +53,9 @@ const GridCell = ({
 
   const startStream = useCallback(() => {
     if (!cam.url || !videoRef.current || !Hls.isSupported()) return;
-    if (hlsRef.current) return; // already loaded
+    if (hlsRef.current) return;
 
-    const hls = new Hls({
-      enableWorker: true,
-      lowLatencyMode: true,
-      maxBufferLength: 1,
-      maxMaxBufferLength: 2,
-      maxBufferSize: 0,
-      maxBufferHole: 0.5,
-      manifestLoadingTimeOut: 8000,
-      manifestLoadingMaxRetry: 1,
-      levelLoadingTimeOut: 8000,
-      levelLoadingMaxRetry: 1,
-      liveSyncDurationCount: 1,
-      liveMaxLatencyDurationCount: 3,
-      highBufferWatchdogPeriod: 1,
-      capLevelToPlayerSize: true,
-    });
-
+    const hls = new Hls(HLS_CONFIG_LOW_LATENCY);
     hls.loadSource(cam.url);
     hls.attachMedia(videoRef.current);
 
@@ -75,7 +78,7 @@ const GridCell = ({
 
     hlsRef.current = hls;
   }, [cam.url]);
-
+  
   const togglePlay = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (isReserved) return;
@@ -101,7 +104,6 @@ const GridCell = ({
     if (!isReserved) onExpand(index);
   }, [isReserved, index, onExpand]);
 
-  // Show play icon when not playing; show pause icon on hover when playing
   const showPlayIcon = !isReserved && !error && !playing;
   const showPauseIcon = !isReserved && !error && playing && hovered;
 
@@ -121,7 +123,6 @@ const GridCell = ({
       onClick={togglePlay}
       onDoubleClick={handleDoubleClick}
     >
-      {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-1.5 px-2 py-1 bg-black/70">
         <div
           className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -139,21 +140,18 @@ const GridCell = ({
         </span>
       </div>
 
-      {/* Reserved */}
       {isReserved && (
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-[7px] text-muted-foreground/30 tracking-widest">RESERVA</span>
         </div>
       )}
 
-      {/* Error */}
       {error && !isReserved && (
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-[7px] text-destructive/60 tracking-widest">SEM SINAL</span>
         </div>
       )}
 
-      {/* Play icon overlay */}
       {showPlayIcon && (
         <div className="absolute inset-0 flex items-center justify-center z-20 cursor-pointer">
           <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center backdrop-blur-sm hover:bg-primary/30 transition-colors">
@@ -162,7 +160,6 @@ const GridCell = ({
         </div>
       )}
 
-      {/* Pause icon on hover while playing */}
       <AnimatePresence>
         {showPauseIcon && (
           <motion.div
@@ -179,7 +176,6 @@ const GridCell = ({
         )}
       </AnimatePresence>
 
-      {/* Video element */}
       {!isReserved && (
         <video
           ref={videoRef}
@@ -200,7 +196,6 @@ const GridCell = ({
   );
 };
 
-/* ── Expanded single camera view ── */
 const ExpandedView = ({
   cam,
   onBack,
@@ -217,20 +212,7 @@ const ExpandedView = ({
   const startStream = useCallback(() => {
     if (!cam.url || !videoRef.current || !Hls.isSupported() || hlsRef.current) return;
 
-    const hls = new Hls({
-      enableWorker: true,
-      lowLatencyMode: true,
-      maxBufferLength: 1,
-      maxMaxBufferLength: 2,
-      maxBufferSize: 0,
-      maxBufferHole: 0.5,
-      manifestLoadingTimeOut: 8000,
-      manifestLoadingMaxRetry: 2,
-      liveSyncDurationCount: 1,
-      liveMaxLatencyDurationCount: 3,
-      highBufferWatchdogPeriod: 1,
-    });
-
+    const hls = new Hls(HLS_CONFIG_LOW_LATENCY);
     hls.loadSource(cam.url);
     hls.attachMedia(videoRef.current);
 
@@ -252,11 +234,11 @@ const ExpandedView = ({
     hlsRef.current = hls;
   }, [cam.url]);
 
-  // Auto-start on mount for expanded view
-  useState(() => {
-    setTimeout(() => startStream(), 100);
-  });
-
+  useEffect(() => {
+    const timeoutId = setTimeout(() => startStream(), 100);
+    return () => clearTimeout(timeoutId);
+  }, [startStream]);
+  
   const togglePlay = useCallback(() => {
     if (!videoRef.current) return;
     if (!live && !hlsRef.current) {
@@ -271,12 +253,15 @@ const ExpandedView = ({
       setPlaying(true);
     }
   }, [live, playing, startStream]);
-
-  // Cleanup on unmount
-  const cleanupRef = useRef(false);
-  if (!cleanupRef.current) {
-    cleanupRef.current = true;
-  }
+  
+  useEffect(() => {
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <motion.div
@@ -284,15 +269,7 @@ const ExpandedView = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="absolute inset-0 z-30 bg-black flex flex-col"
-      onAnimationComplete={(def: any) => {
-        // Cleanup HLS when exiting
-        if (def?.opacity === 0 && hlsRef.current) {
-          hlsRef.current.destroy();
-          hlsRef.current = null;
-        }
-      }}
     >
-      {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-black/80 border-b border-primary/20 shrink-0">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${live ? "bg-green-400 animate-pulse" : "bg-destructive"}`} />
@@ -315,7 +292,6 @@ const ExpandedView = ({
         </button>
       </div>
 
-      {/* Video */}
       <div
         className="flex-1 relative cursor-pointer select-none"
         onDoubleClick={onBack}
@@ -332,7 +308,6 @@ const ExpandedView = ({
           </div>
         )}
 
-        {/* Pause overlay on hover while playing */}
         <AnimatePresence>
           {playing && hovered && (
             <motion.div
@@ -366,7 +341,6 @@ const ExpandedView = ({
   );
 };
 
-/* ── Main full-screen grid overlay ── */
 const SecurityCameraGrid = ({ cameras, onClose }: SecurityCameraGridProps) => {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
@@ -383,7 +357,6 @@ const SecurityCameraGrid = ({ cameras, onClose }: SecurityCameraGridProps) => {
       transition={{ duration: 0.3 }}
       className="fixed inset-0 z-[100] flex flex-col bg-background/95 backdrop-blur-md"
     >
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-primary/20 bg-black/60 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_hsl(190,100%,50%/0.6)]" />
@@ -403,7 +376,6 @@ const SecurityCameraGrid = ({ cameras, onClose }: SecurityCameraGridProps) => {
         </button>
       </div>
 
-      {/* Grid area */}
       <div className="flex-1 p-[2px] min-h-0 relative">
         <AnimatePresence>
           {expandedIndex !== null && cameras[expandedIndex] && (
