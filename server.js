@@ -1,3 +1,4 @@
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -201,26 +202,31 @@ app.get("/api/radio/artwork-next", (req, res) => serveArtwork("artwork_next", re
 const { exec } = require("child_process");
 
 app.get("/api/network/scan", (_req, res) => {
-  exec("arp -a", (err, stdout) => {
-    if (err) {
-      console.error("ARP scan error:", err);
-      return res.status(500).json({ error: "Failed to run arp scan" });
-    }
-
-    const devices = [];
-    const lines = stdout.split("\n");
-    for (const line of lines) {
-      // Match patterns like: 192.168.0.1    00-aa-bb-cc-dd-ee   dynamic
-      const match = line.match(
-        /(\d+\.\d+\.\d+\.\d+)\s+([\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2})\s+(\w+)/
-      );
-      if (match) {
-        devices.push({ ip: match[1], mac: match[2], type: match[3] });
+  try {
+    exec("arp -a", (err, stdout) => {
+      if (err) {
+        console.error("ARP scan error:", err);
+        return res.status(500).json({ error: "Failed to run arp scan" });
       }
-    }
 
-    res.json({ devices });
-  });
+      const devices = [];
+      const lines = stdout.split("\n");
+      for (const line of lines) {
+        // Match patterns like: 192.168.0.1    00-aa-bb-cc-dd-ee   dynamic
+        const match = line.match(
+          /(\d+\.\d+\.\d+\.\d+)\s+([\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2}[:-][\da-fA-F]{2})\s+(\w+)/
+        );
+        if (match) {
+          devices.push({ ip: match[1], mac: match[2], type: match[3] });
+        }
+      }
+
+      res.json({ devices });
+    });
+  } catch (error) {
+    console.error("ARP exec error:", error);
+    res.status(500).json({ error: "Failed to execute arp command" });
+  }
 });
 
 // ── GET /api/speedtest ────────────────────────────────────
