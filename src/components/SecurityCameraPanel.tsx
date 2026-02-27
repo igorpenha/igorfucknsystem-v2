@@ -4,34 +4,32 @@ import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
 import SecurityCameraGrid from "./SecurityCameraGrid";
 
-const CAMERAS = [
-  // DVR 0.4
-  { label: "CAM 01 (0.4)",  url: "https://cctv.igorfucknsystem.com.br/ch_cam1.m3u8" },
-  { label: "CAM 04 (0.4)",  url: "https://cctv.igorfucknsystem.com.br/ch_cam4.m3u8" },
-  { label: "CAM 06 (0.4)",  url: "https://cctv.igorfucknsystem.com.br/ch_cam6.m3u8" },
-  { label: "CAM 10 (0.4)",  url: "https://cctv.igorfucknsystem.com.br/ch_cam10.m3u8" },
-  { label: "CAM 17 (0.4)",  url: "https://cctv.igorfucknsystem.com.br/ch_cam17.m3u8" },
-  // DVR 0.94
-  { label: "CAM 11 (0.94)", url: "https://cctv.igorfucknsystem.com.br/ch_cam11.m3u8" },
-  { label: "CAM 12 (0.94)", url: "https://cctv.igorfucknsystem.com.br/ch_cam12.m3u8" },
-  { label: "CAM 13 (0.94)", url: "https://cctv.igorfucknsystem.com.br/ch_cam13.m3u8" },
-  // IP / Mobile
-  { label: "IP 0.3",        url: "https://cctv.igorfucknsystem.com.br/ch_cam03.m3u8" },
-  { label: "IP 0.9",        url: "https://cctv.igorfucknsystem.com.br/ch_cam09.m3u8" },
-  { label: "CAM PALCO",     url: "https://cctv.igorfucknsystem.com.br/ch_campalco.m3u8" },
-  { label: "CAM MOBILE",    url: "https://cctv.igorfucknsystem.com.br/ch_mobile.m3u8" },
+const CAMERAS_CONFIG = [
+  { id: "cam1", label: "CAM 01 (0.4)" },
+  { id: "cam4", label: "CAM 04 (0.4)" },
+  { id: "cam6", label: "CAM 06 (0.4)" },
+  { id: "cam10", label: "CAM 10 (0.4)" },
+  { id: "cam17", label: "CAM 17 (0.4)" },
+  { id: "cam11", label: "CAM 11 (0.94)" },
+  { id: "cam12", label: "CAM 12 (0.94)" },
+  { id: "cam13", label: "CAM 13 (0.94)" },
+  { id: "cam03", label: "IP 0.3" },
+  { id: "cam09", label: "IP 0.9" },
+  { id: "campalco", label: "CAM PALCO" },
+  { id: "webcam", label: "WEBCAM" },
+  { id: "mobile", label: "CAM MOBILE" },
 ];
 
 const HLS_CONFIG_LOW_LATENCY: Hls.Config = {
   enableWorker: true,
   lowLatencyMode: true,
   backBufferLength: 0,
-  maxBufferLength: 1, 
-  maxMaxBufferLength: 2, 
-  maxBufferSize: 1, 
+  maxBufferLength: 1,
+  maxMaxBufferLength: 2,
+  maxBufferSize: 1,
   maxBufferHole: 0.1,
   liveSyncDurationCount: 1,
-  liveMaxLatencyDurationCount: 2, 
+  liveMaxLatencyDurationCount: 2,
   highBufferWatchdogPeriod: 1,
   maxFragLookUpTolerance: 0,
   manifestLoadingTimeOut: 5000,
@@ -123,6 +121,8 @@ const SecurityCameraPanel = () => {
   const [isStreamActive, setIsStreamActive] = useState(false);
   const [isStandby, setIsStandby] = useState(false);
   const [isNoSignal, setIsNoSignal] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
+  const [activeServer, setActiveServer] = useState<'debian' | 'zorin'>('debian');
 
   const hlsRef = useRef<Hls | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -130,6 +130,17 @@ const SecurityCameraPanel = () => {
   const isMounted = useRef(true);
 
   const clock = useLiveClock();
+
+  const getHlsStreamUrl = useCallback((cameraId: string) => {
+      const base = activeServer === 'debian'
+        ? 'http://cctv-debian.igorfucknsystem.com.br/'
+        : 'http://cctv-zorin.igorfucknsystem.com.br/';
+
+      if (cameraId === 'webcam') {
+        return `${base}ch_webcam_${activeServer}.m3u8`;
+      }
+      return `${base}ch_${cameraId}.m3u8`;
+    }, [activeServer]);
 
   useEffect(() => {
     return () => {
@@ -163,15 +174,8 @@ const SecurityCameraPanel = () => {
       destroyHls();
       setActiveCamera(index);
 
-      const cam = CAMERAS[index];
-
-      if (!cam.url) {
-        setIsLoading(false);
-        setIsStreamActive(false);
-        setIsStandby(false);
-        setIsNoSignal(true);
-        return;
-      }
+      const cam = CAMERAS_CONFIG[index];
+      const streamUrl = getHlsStreamUrl(cam.id);
 
       setIsLoading(true);
       setIsStreamActive(false);
@@ -186,7 +190,7 @@ const SecurityCameraPanel = () => {
 
       const hls = new Hls(HLS_CONFIG_LOW_LATENCY);
 
-      hls.loadSource(cam.url);
+      hls.loadSource(streamUrl);
       hls.attachMedia(videoRef.current);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -203,11 +207,11 @@ const SecurityCameraPanel = () => {
         const v = videoRef.current;
         if (v && v.buffered.length > 0) {
           const liveEdge = v.buffered.end(v.buffered.length - 1);
-          if (liveEdge - v.currentTime > 2) { // Reduzido de 3s para 2s
+          if (liveEdge - v.currentTime > 2) {
             v.currentTime = liveEdge - 0.5;
           }
         }
-      }, 1000); // Verificação mais frequente
+      }, 1000);
 
       hls.on(Hls.Events.DESTROYING, () => clearInterval(catchUpInterval));
 
@@ -215,15 +219,20 @@ const SecurityCameraPanel = () => {
         if (data.fatal && isMounted.current) {
           setIsLoading(false);
           setIsStreamActive(false);
-          setIsStandby(true);
-          setIsNoSignal(false);
+          setIsNoSignal(true);
         }
       });
 
       hlsRef.current = hls;
     },
-    [destroyHls]
+    [destroyHls, getHlsStreamUrl]
   );
+
+    useEffect(() => {
+        if (activeCamera !== null) {
+            loadStream(activeCamera);
+        }
+    }, [activeServer, activeCamera, loadStream]);
 
   const handleCameraClick = useCallback(
     (index: number) => {
@@ -260,42 +269,47 @@ const SecurityCameraPanel = () => {
     let current = 0;
     rotationTimer.current = setInterval(() => {
       if (!isMounted.current) return;
-      current = (current + 1) % CAMERAS.length;
+      current = (current + 1) % CAMERAS_CONFIG.length;
       loadStream(current);
     }, ROTATION_INTERVAL);
   }, [isAutoRotating, loadStream, stopRotationTimer]);
 
-  const [showGrid, setShowGrid] = useState(false);
-
-  const hasStream = activeCamera !== null && CAMERAS[activeCamera]?.url;
+  const camerasForGrid = CAMERAS_CONFIG.map(cam => ({ ...cam, url: getHlsStreamUrl(cam.id) }));
+  const hasStream = activeCamera !== null;
 
   return (
     <>
     <AnimatePresence>
       {showGrid && (
-        <SecurityCameraGrid cameras={CAMERAS} onClose={() => setShowGrid(false)} />
+        <SecurityCameraGrid cameras={camerasForGrid} onClose={() => setShowGrid(false)} />
       )}
     </AnimatePresence>
     <div className="hud-panel rounded-sm p-4 scanlines flex flex-col h-full min-h-0">
-      <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border shrink-0">
-        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow" />
-        <h3 className="font-display text-xs uppercase tracking-[0.25em] text-foreground text-glow">
-          Sistema de Monitoramento
-        </h3>
-        <div className="flex-1" />
-        <div className="flex gap-1">
-          <div className="w-1 h-1 rounded-full bg-secondary opacity-60" />
-          <div className="w-1 h-1 rounded-full bg-accent opacity-60" />
-          <div className="w-1 h-1 rounded-full bg-primary opacity-60" />
+        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border shrink-0">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow" />
+            <h3 className="font-display text-xs uppercase tracking-[0.25em] text-foreground text-glow">
+            Sistema de Monitoramento
+            </h3>
+            <div className="flex-1" />
+            <div className="flex gap-1.5 text-[9px] font-mono tracking-widest border border-border/40 rounded-sm p-0.5 bg-background/30">
+                <button 
+                    onClick={() => setActiveServer('debian')}
+                    className={`px-2 py-0.5 rounded-sm transition-all ${activeServer === 'debian' ? 'bg-primary/20 text-primary shadow-[0_0_8px_hsl(var(--primary)/0.3)]' : 'text-muted-foreground hover:bg-muted/30'}`}>
+                    DEBIAN
+                </button>
+                <button 
+                    onClick={() => setActiveServer('zorin')}
+                    className={`px-2 py-0.5 rounded-sm transition-all ${activeServer === 'zorin' ? 'bg-primary/20 text-primary shadow-[0_0_8px_hsl(var(--primary)/0.3)]' : 'text-muted-foreground hover:bg-muted/30'}`}>
+                    ZORIN
+                </button>
+            </div>
         </div>
-      </div>
 
       <div className="flex flex-col lg:flex-row gap-3 flex-1 min-h-0">
         <div className="lg:w-[35%] flex flex-col min-h-0">
           <div className="border border-border/50 rounded-sm p-1.5 flex-1 min-h-0 overflow-hidden">
             <div className="overflow-y-auto h-full pr-1 space-y-1 custom-scrollbar">
-              {CAMERAS.map((cam, i) => {
-                const hasUrl = !!cam.url;
+              {CAMERAS_CONFIG.map((cam, i) => {
                 return (
                   <button
                     key={i}
@@ -303,9 +317,7 @@ const SecurityCameraPanel = () => {
                     className={`w-full py-1.5 rounded-sm text-[10px] font-display uppercase tracking-widest border transition-all duration-200 ${
                       activeCamera === i
                         ? "bg-primary/20 border-primary text-primary shadow-[0_0_12px_hsl(190,100%,50%/0.3)] ring-1 ring-primary/50"
-                        : hasUrl
-                        ? "bg-muted/30 border-border text-muted-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
-                        : "bg-muted/10 border-border/30 text-muted-foreground/40 hover:bg-muted/20 hover:text-muted-foreground/60"
+                        : "bg-muted/30 border-border text-muted-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
                     }`}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -317,15 +329,10 @@ const SecurityCameraPanel = () => {
                             ? "bg-destructive shadow-[0_0_6px_hsl(0,80%,55%/0.6)]"
                             : activeCamera === i
                             ? "bg-primary animate-pulse-glow"
-                            : hasUrl
-                            ? "bg-muted-foreground/30"
-                            : "bg-muted-foreground/15"
+                            : "bg-muted-foreground/30"
                         }`}
                       />
                       {cam.label}
-                      {!hasUrl && (
-                        <span className="text-[7px] text-muted-foreground/30 tracking-normal ml-1">OFF</span>
-                      )}
                     </div>
                   </button>
                 );
@@ -456,7 +463,7 @@ const SecurityCameraPanel = () => {
           {activeCamera !== null && (
             <div className="mt-1 flex items-center justify-between px-1 shrink-0">
               <span className="text-[9px] text-muted-foreground tracking-widest">
-                CAM-{String(activeCamera + 1).padStart(2, "0")}
+                {CAMERAS_CONFIG[activeCamera]?.label || "CAM DESCONHECIDA"}
               </span>
               <span className="text-[9px] text-muted-foreground tracking-widest">
                 {isAutoRotating ? "ROTAÇÃO AUTO 60s" : "MANUAL"}

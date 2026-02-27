@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import HeaderGlitchLogo from "@/components/HeaderGlitchLogo";
 import HudClock from "@/components/HudClock";
 import HudPanel from "@/components/HudPanel";
@@ -13,12 +13,12 @@ import SecurityCameraPanel from "@/components/SecurityCameraPanel";
 import FileMenu from "@/components/FileMenu";
 import FileViewer from "@/components/FileViewer";
 import SpaceBackground from "@/components/SpaceBackground";
-import { AnimatePresence } from "framer-motion";
 import { fetchFiles, type FsEntry } from "@/services/fileSystemApi";
 import { toast } from "sonner";
-import { CalculatorIcon, Wifi, Gauge, FileImage, LogOut } from "lucide-react";
+import { CalculatorIcon, Wifi, Gauge, FileImage, LogOut, FileDown } from "lucide-react";
 import SpeedTest from "@/components/SpeedTest";
 import ImgToPdf from "@/components/ImgToPdf";
+import PdfExporter from "@/components/PdfExporter";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -38,8 +38,15 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
   const [networkOpen, setNetworkOpen] = useState(false);
   const [speedOpen, setSpeedOpen] = useState(false);
   const [pdfOpen, setPdfOpen] = useState(false);
+  const [pdfExporterOpen, setPdfExporterOpen] = useState(false);
 
-  const closeAllTools = () => { setCalcOpen(false); setNetworkOpen(false); setSpeedOpen(false); setPdfOpen(false); };
+  const closeAllTools = () => {
+    setCalcOpen(false);
+    setNetworkOpen(false);
+    setSpeedOpen(false);
+    setPdfOpen(false);
+    setPdfExporterOpen(false);
+  };
 
   const loadFiles = useCallback(async (folderName: string) => {
     try {
@@ -78,7 +85,6 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
     <div className="bg-background relative overflow-hidden w-screen h-screen flex flex-col">
       <SpaceBackground />
 
-      {/* Header */}
       <header className="border-b border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">
         <div className="flex items-center gap-4">
           <HeaderGlitchLogo />
@@ -105,16 +111,9 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
         </div>
       </header>
 
-      {/* ═══ MAIN GRID ═══
-          Layout: 3 colunas (3 | 6 | 3) × 2 linhas (1fr 1fr)
-          Coluna esquerda: Pastas + Ferramentas/Info
-          Coluna central: Arquivos + Chat
-          Coluna direita: WebRadio (row-span-2)
-      */}
       <main
         className="p-4 md:p-6 relative z-10 flex-1 min-h-0 overflow-hidden grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-2 gap-3"
       >
-        {/* ═══ TOP-LEFT: Pastas ═══ */}
         <div className="lg:col-span-3 lg:row-span-1 min-h-0 overflow-hidden">
           <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp} className="h-full">
             <HudPanel title="Pastas" className="overflow-hidden flex flex-col h-full">
@@ -125,7 +124,6 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
           </motion.div>
         </div>
 
-        {/* ═══ TOP-CENTER: Lista de Arquivos ═══ */}
         <div className="lg:col-span-6 lg:row-span-1 min-h-0 overflow-hidden">
           <motion.div custom={1} initial="hidden" animate="visible" variants={fadeUp} className="h-full">
             <HudPanel title="Lista de Arquivos" className="overflow-hidden flex flex-col h-full">
@@ -153,7 +151,6 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
           </motion.div>
         </div>
 
-        {/* ═══ RIGHT: WebRadio (row-span-2 = coluna inteira) ═══ */}
         <div className="lg:col-span-3 lg:row-span-2 min-h-0 overflow-hidden">
           <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp} className="h-full">
             <HudPanel title="IGOR FUCKN STATION" className="h-full overflow-hidden flex flex-col">
@@ -162,7 +159,6 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
           </motion.div>
         </div>
 
-        {/* ═══ BOTTOM-LEFT: Ferramentas + Info do Sistema ═══ */}
         <div className="lg:col-span-3 lg:row-span-1 min-h-0 overflow-hidden flex flex-col gap-3">
           <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="flex-1 min-h-0">
             <HudPanel title="Ferramentas" className="h-full overflow-hidden flex flex-col">
@@ -172,6 +168,7 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
                   { key: "net", icon: Wifi, label: "IPS DA REDE", open: networkOpen, toggle: () => { closeAllTools(); setNetworkOpen(v => !v); } },
                   { key: "speed", icon: Gauge, label: "SPEED TEST", open: speedOpen, toggle: () => { closeAllTools(); setSpeedOpen(v => !v); } },
                   { key: "pdf", icon: FileImage, label: "IMG TO PDF", open: pdfOpen, toggle: () => { closeAllTools(); setPdfOpen(v => !v); } },
+                  { key: "pdf-exporter", icon: FileDown, label: "EXPORTAR PDF", open: pdfExporterOpen, toggle: () => { closeAllTools(); setPdfExporterOpen(v => !v); } },
                 ].map(({ key, icon: Icon, label, open, toggle }) => (
                   <button
                     key={key}
@@ -195,7 +192,6 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
           </motion.div>
         </div>
 
-        {/* ═══ BOTTOM-CENTER: CFTV MONITORING ═══ */}
         <div className="lg:col-span-6 lg:row-span-1 min-h-0 overflow-hidden">
           <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="h-full">
             <SecurityCameraPanel />
@@ -203,7 +199,6 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
         </div>
       </main>
 
-      {/* Central Projection Zone */}
       <AnimatePresence>
         {calcOpen && (
           <ToolProjection title="Calculadora" onClose={() => setCalcOpen(false)}>
@@ -225,9 +220,13 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
             <ImgToPdf />
           </ToolProjection>
         )}
+        {pdfExporterOpen && (
+          <ToolProjection title="Exportar para PDF" onClose={() => setPdfExporterOpen(false)}>
+            <PdfExporter />
+          </ToolProjection>
+        )}
       </AnimatePresence>
 
-      {/* Footer */}
       <footer className="border-t border-border px-4 md:px-6 py-2 flex items-center justify-between relative z-10 shrink-0">
         <span className="text-[10px] text-muted-foreground tracking-widest">© 2026 IGOR FUCKN SYSTEM</span>
         <span className="text-[10px] text-muted-foreground tracking-widest">BUILD 2.0.0 // ALL SYSTEMS NOMINAL</span>
