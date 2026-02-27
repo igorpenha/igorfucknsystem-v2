@@ -4,26 +4,49 @@ import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Pause } from "lucide-react";
 
+// Lista de IDs das câmeras
+const cameraIds = [
+  "ch_cam1", "ch_cam4", "ch_cam6", "ch_cam10", "ch_cam17", "ch_cam11",
+  "ch_cam12", "ch_cam13", "dvr3_cam1", "dvr3_cam2", "ch_cam03", "ch_cam09",
+  "ch_campalco", "ch_mobile", "ch_webcam"
+];
+
+// Tipos
+type ServerType = 'debian' | 'zorin';
+
 interface CameraData {
   label: string;
   url: string | null;
 }
 
 interface SecurityCameraGridProps {
-  cameras: CameraData[];
+  activeServer: ServerType;
   onClose: () => void;
 }
+
+// Função para gerar URLs dinamicamente
+const getCameraUrl = (id: string, server: ServerType): string => {
+  const baseUrl = server === 'debian'
+    ? 'https://cctv-debian.igorfucknsystem.com.br/'
+    : 'https://cctv-zorin.igorfucknsystem.com.br/';
+
+  if (id === 'ch_webcam') {
+    return `${baseUrl}ch_webcam_${server}.m3u8`;
+  }
+  return `${baseUrl}${id}.m3u8`;
+};
+
 
 const HLS_CONFIG_LOW_LATENCY: Hls.Config = {
   enableWorker: true,
   lowLatencyMode: true,
   backBufferLength: 0,
-  maxBufferLength: 1, 
-  maxMaxBufferLength: 2, 
-  maxBufferSize: 1, 
+  maxBufferLength: 1,
+  maxMaxBufferLength: 2,
+  maxBufferSize: 1,
   maxBufferHole: 0.1,
   liveSyncDurationCount: 1,
-  liveMaxLatencyDurationCount: 2, 
+  liveMaxLatencyDurationCount: 2,
   highBufferWatchdogPeriod: 1,
   maxFragLookUpTolerance: 0,
   manifestLoadingTimeOut: 5000,
@@ -78,7 +101,17 @@ const GridCell = ({
 
     hlsRef.current = hls;
   }, [cam.url]);
-  
+
+  useEffect(() => {
+    // Cleanup HLS instance on component unmount
+    return () => {
+        if (hlsRef.current) {
+            hlsRef.current.destroy();
+            hlsRef.current = null;
+        }
+    };
+  }, []);
+
   const togglePlay = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (isReserved) return;
@@ -185,8 +218,8 @@ const GridCell = ({
           style={{
             opacity: playing ? 1 : 0,
             transition: "opacity 0.3s",
-            maxWidth: "480px",
-            maxHeight: "360px",
+            maxWidth: "100%",
+            maxHeight: "100%",
             width: "100%",
             height: "100%",
           }}
@@ -238,7 +271,7 @@ const ExpandedView = ({
     const timeoutId = setTimeout(() => startStream(), 100);
     return () => clearTimeout(timeoutId);
   }, [startStream]);
-  
+
   const togglePlay = useCallback(() => {
     if (!videoRef.current) return;
     if (!live && !hlsRef.current) {
@@ -253,7 +286,7 @@ const ExpandedView = ({
       setPlaying(true);
     }
   }, [live, playing, startStream]);
-  
+
   useEffect(() => {
     return () => {
       if (hlsRef.current) {
@@ -341,8 +374,13 @@ const ExpandedView = ({
   );
 };
 
-const SecurityCameraGrid = ({ cameras, onClose }: SecurityCameraGridProps) => {
+const SecurityCameraGrid = ({ activeServer, onClose }: SecurityCameraGridProps) => {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+
+  const cameras = cameraIds.map(id => ({
+    label: id.toUpperCase().replace(/_/g, ' '),
+    url: getCameraUrl(id, activeServer)
+  }));
 
   const handleClose = useCallback(() => {
     setExpandedIndex(null);

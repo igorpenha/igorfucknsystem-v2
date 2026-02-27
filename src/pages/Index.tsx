@@ -39,6 +39,7 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
   const [speedOpen, setSpeedOpen] = useState(false);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfExporterOpen, setPdfExporterOpen] = useState(false);
+  const [activeServer, setActiveServer] = useState<'debian' | 'zorin'>('debian');
 
   const closeAllTools = () => {
     setCalcOpen(false);
@@ -194,7 +195,7 @@ const Index = ({ onLogout }: { onLogout: () => void }) => {
 
         <div className="lg:col-span-6 lg:row-span-1 min-h-0 overflow-hidden">
           <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp} className="h-full">
-            <SecurityCameraPanel />
+            <SecurityCameraPanel activeServer={activeServer} setActiveServer={setActiveServer} />
           </motion.div>
         </div>
       </main>

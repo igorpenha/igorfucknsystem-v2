@@ -4,6 +4,11 @@ import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
 import SecurityCameraGrid from "./SecurityCameraGrid";
 
+interface SecurityCameraPanelProps {
+  activeServer: 'debian' | 'zorin';
+  setActiveServer: (server: 'debian' | 'zorin') => void;
+}
+
 const CAMERAS_CONFIG = [
   { id: "cam1", label: "CAM 01 (0.4)" },
   { id: "cam4", label: "CAM 04 (0.4)" },
@@ -114,7 +119,7 @@ const TacticalOverlay = ({ camIndex, clock }: { camIndex: number; clock: Date })
   );
 };
 
-const SecurityCameraPanel = () => {
+const SecurityCameraPanel = ({ activeServer, setActiveServer }: SecurityCameraPanelProps) => {
   const [activeCamera, setActiveCamera] = useState<number | null>(null);
   const [isAutoRotating, setIsAutoRotating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -122,8 +127,7 @@ const SecurityCameraPanel = () => {
   const [isStandby, setIsStandby] = useState(false);
   const [isNoSignal, setIsNoSignal] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
-  const [activeServer, setActiveServer] = useState<'debian' | 'zorin'>('debian');
-
+  
   const hlsRef = useRef<Hls | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const rotationTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -275,14 +279,13 @@ const SecurityCameraPanel = () => {
     }, ROTATION_INTERVAL);
   }, [isAutoRotating, loadStream, stopRotationTimer]);
 
-  const camerasForGrid = CAMERAS_CONFIG.map(cam => ({ ...cam, url: getHlsStreamUrl(cam.id) }));
   const hasStream = activeCamera !== null;
 
   return (
     <>
     <AnimatePresence>
       {showGrid && (
-        <SecurityCameraGrid cameras={camerasForGrid} onClose={() => setShowGrid(false)} />
+        <SecurityCameraGrid activeServer={activeServer} onClose={() => setShowGrid(false)} />
       )}
     </AnimatePresence>
     <div className="hud-panel rounded-sm p-4 scanlines flex flex-col h-full min-h-0">
