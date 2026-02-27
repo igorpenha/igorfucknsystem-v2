@@ -1,9 +1,18 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Lock, Volume2, VolumeX, LogIn } from "lucide-react";
 import logoImage from "@/assets/logo-new.png";
 import { FILE_API_BASE_URL } from "@/config/api";
-import LoginAudioVisualizer from "@/components/login/LoginAudioVisualizer";
+
+const LoginAudioVisualizer = lazy(() => import("@/components/login/LoginAudioVisualizer"));
+
+/* Simple error boundary for R3F */
+import React from "react";
+class ErrorBoundarySimple extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() { return this.state.hasError ? null : this.props.children; }
+}
 
 const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
 const METADATA_URL = `${FILE_API_BASE_URL}/api/radio/now-playing`;
@@ -364,7 +373,11 @@ const Login = ({ onLogin }: { onLogin: () => void }) => {
       </motion.div>
 
       {/* 3D Audio Visualizer - full page */}
-      <LoginAudioVisualizer analyserRef={analyserNodeRef} />
+      <Suspense fallback={null}>
+        <ErrorBoundarySimple>
+          <LoginAudioVisualizer analyserRef={analyserNodeRef} />
+        </ErrorBoundarySimple>
+      </Suspense>
     </div>
   );
 };
