@@ -132,14 +132,15 @@ const SecurityCameraPanel = () => {
   const clock = useLiveClock();
 
   const getHlsStreamUrl = useCallback((cameraId: string) => {
-      const base = activeServer === 'debian'
-        ? 'http://cctv-debian.igorfucknsystem.com.br/'
-        : 'http://cctv-zorin.igorfucknsystem.com.br/';
-
+      const baseUrl = activeServer === 'debian' 
+        ? 'https://cctv-debian.igorfucknsystem.com.br/' 
+        : 'https://cctv-zorin.igorfucknsystem.com.br/';
+      
       if (cameraId === 'webcam') {
-        return `${base}ch_webcam_${activeServer}.m3u8`;
+        return baseUrl + (activeServer === 'debian' ? 'ch_webcam_debian.m3u8' : 'ch_webcam_zorin.m3u8');
       }
-      return `${base}ch_${cameraId}.m3u8`;
+      
+      return baseUrl + `ch_${cameraId}.m3u8`;
     }, [activeServer]);
 
   useEffect(() => {
