@@ -158,14 +158,14 @@ app.get("/api/radio/now-playing", async (_req, res) => {
       title,
       artist,
       album: "TRANSMISSÃO AO VIVO",
-      coverUrl: `http://localhost:4000/api/radio/artwork?t=${Date.now()}`,
+      coverUrl: `${process.env.VITE_API_URL || "http://localhost:4000"}/api/radio/artwork?t=${Date.now()}`,
     });
   } catch {
     res.json({
       title: "Nenhuma música tocando",
       artist: "",
       album: "TRANSMISSÃO AO VIVO",
-      coverUrl: `http://localhost:4000/api/radio/artwork?t=${Date.now()}`,
+      coverUrl: `${process.env.VITE_API_URL || "http://localhost:4000"}/api/radio/artwork?t=${Date.now()}`,
     });
   }
 });

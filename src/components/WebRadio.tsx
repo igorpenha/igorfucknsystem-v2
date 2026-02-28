@@ -6,7 +6,7 @@ import CarouselErrorBoundary from "@/components/radio/CarouselErrorBoundary";
 import TrackHistory from "@/components/radio/TrackHistory";
 import RadioSvgDecorations from "@/components/radio/RadioSvgDecorations";
 
-const STREAM_URL = "https://stream.igorfucknsystem.com.br/live";
+const STREAM_URL = import.meta.env.VITE_STREAM_URL || "https://stream.igorfucknsystem.com.br/live";
 const METADATA_URL = `${FILE_API_BASE_URL}/api/radio/now-playing`;
 const METADATA_INTERVAL = 10_000;
 const BAR_COUNT = 32;
@@ -311,138 +311,138 @@ const WebRadio = () => {
       {/* ═══ METADE SUPERIOR (50%): Controles + Visualizador ancorado na base ═══ */}
       <div className="h-1/2 flex flex-col min-h-0 relative z-10">
 
-      {/* Controles */}
-      <div className="px-2 pt-2 pb-1.5 flex items-center gap-2 border-b border-border/15 shrink-0">
-        <button
-          onClick={togglePlay}
-          className="relative w-10 h-10 shrink-0 border border-primary/40 bg-primary/[0.08] hover:bg-primary/[0.18] transition-all flex items-center justify-center"
-          style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
-          aria-label={playing ? "Pausar" : "Play"}
-        >
-          <PlayPauseIcon playing={playing} connecting={connecting} />
-          {playing && (
-            <motion.div
-              className="absolute inset-0 border border-primary/20"
-              style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
-              animate={{ opacity: [0.4, 0, 0.4] }}
-              transition={{ duration: 1.8, repeat: Infinity }}
-            />
-          )}
-        </button>
+        {/* Controles */}
+        <div className="px-2 pt-2 pb-1.5 flex items-center gap-2 border-b border-border/15 shrink-0">
+          <button
+            onClick={togglePlay}
+            className="relative w-10 h-10 shrink-0 border border-primary/40 bg-primary/[0.08] hover:bg-primary/[0.18] transition-all flex items-center justify-center"
+            style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
+            aria-label={playing ? "Pausar" : "Play"}
+          >
+            <PlayPauseIcon playing={playing} connecting={connecting} />
+            {playing && (
+              <motion.div
+                className="absolute inset-0 border border-primary/20"
+                style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
+                animate={{ opacity: [0.4, 0, 0.4] }}
+                transition={{ duration: 1.8, repeat: Infinity }}
+              />
+            )}
+          </button>
 
-        <button
-          onClick={toggleMute}
-          className="w-8 h-8 shrink-0 border border-accent/25 bg-accent/5 hover:bg-accent/[0.12] transition-all flex items-center justify-center"
-          style={{ clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}
-          aria-label="Mute"
-        >
-          <VolumeIcon muted={muted} />
-        </button>
+          <button
+            onClick={toggleMute}
+            className="w-8 h-8 shrink-0 border border-accent/25 bg-accent/5 hover:bg-accent/[0.12] transition-all flex items-center justify-center"
+            style={{ clipPath: "polygon(2px 0, 100% 0, calc(100% - 2px) 100%, 0 100%)" }}
+            aria-label="Mute"
+          >
+            <VolumeIcon muted={muted} />
+          </button>
 
-        <div className="flex-1 relative flex items-center">
-          <input
-            type="range" min={0} max={1} step={0.01}
-            value={muted ? 0 : volume}
-            onChange={handleVolume}
-            className="w-full h-1.5 appearance-none cursor-pointer"
-            style={{
-              background: `linear-gradient(to right, hsl(var(--primary)) ${(muted ? 0 : volume) * 100}%, hsl(var(--muted)) ${(muted ? 0 : volume) * 100}%)`,
-              clipPath: "polygon(0 25%, 100% 0, 100% 75%, 0 100%)",
-            }}
-            aria-label="Volume"
-          />
-        </div>
-        <span className="text-[7px] text-muted-foreground/50 tabular-nums w-6 text-right shrink-0 tracking-wider">
-          {Math.round((muted ? 0 : volume) * 100)}%
-        </span>
-
-        <AnimatePresence mode="wait">
-          {playing ? (
-            <motion.div key="live" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="flex items-center gap-1 px-2 py-0.5 border border-destructive/40 bg-destructive/10"
-              style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
-            >
-              <motion.div className="w-1.5 h-1.5 rounded-full bg-destructive" animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1, repeat: Infinity }} />
-              <span className="text-[7px] tracking-[0.3em] text-destructive font-display">LIVE</span>
-            </motion.div>
-          ) : (
-            <motion.div key="off" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="flex items-center gap-1 px-2 py-0.5 border border-muted-foreground/15 bg-muted/5"
-              style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
-            >
-              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/25" />
-              <span className="text-[7px] tracking-[0.3em] text-muted-foreground/40 font-display">
-                {connecting ? "LINK..." : "OFF"}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Visualizador de Espectro — mt-auto ancora na base da metade superior */}
-      <div className="px-0 flex items-end justify-center gap-[1.5px] py-2 min-h-0 mt-auto flex-1" >
-        {Array.from({ length: BAR_COUNT }).map((_, i) => {
-          const hue = 185 + (i / BAR_COUNT) * 135;
-          return (
-            <div
-              key={i}
-              ref={el => { if (el) barsRef.current[i] = el; }}
-              className="flex-1 min-w-0"
+          <div className="flex-1 relative flex items-center">
+            <input
+              type="range" min={0} max={1} step={0.01}
+              value={muted ? 0 : volume}
+              onChange={handleVolume}
+              className="w-full h-1.5 appearance-none cursor-pointer"
               style={{
-                height: "1.5%",
-                background: `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.04), hsla(${hue}, 100%, 55%, 0.1))`,
-                clipPath: "polygon(1px 0, calc(100% - 1px) 0, 100% 100%, 0 100%)",
-                willChange: "height, background, box-shadow",
+                background: `linear-gradient(to right, hsl(var(--primary)) ${(muted ? 0 : volume) * 100}%, hsl(var(--muted)) ${(muted ? 0 : volume) * 100}%)`,
+                clipPath: "polygon(0 25%, 100% 0, 100% 75%, 0 100%)",
               }}
+              aria-label="Volume"
             />
-          );
-        })}
-      </div>
+          </div>
+          <span className="text-[7px] text-muted-foreground/50 tabular-nums w-6 text-right shrink-0 tracking-wider">
+            {Math.round((muted ? 0 : volume) * 100)}%
+          </span>
+
+          <AnimatePresence mode="wait">
+            {playing ? (
+              <motion.div key="live" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="flex items-center gap-1 px-2 py-0.5 border border-destructive/40 bg-destructive/10"
+                style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
+              >
+                <motion.div className="w-1.5 h-1.5 rounded-full bg-destructive" animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1, repeat: Infinity }} />
+                <span className="text-[7px] tracking-[0.3em] text-destructive font-display">LIVE</span>
+              </motion.div>
+            ) : (
+              <motion.div key="off" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="flex items-center gap-1 px-2 py-0.5 border border-muted-foreground/15 bg-muted/5"
+                style={{ clipPath: "polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%)" }}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/25" />
+                <span className="text-[7px] tracking-[0.3em] text-muted-foreground/40 font-display">
+                  {connecting ? "LINK..." : "OFF"}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Visualizador de Espectro — mt-auto ancora na base da metade superior */}
+        <div className="px-0 flex items-end justify-center gap-[1.5px] py-2 min-h-0 mt-auto flex-1" >
+          {Array.from({ length: BAR_COUNT }).map((_, i) => {
+            const hue = 185 + (i / BAR_COUNT) * 135;
+            return (
+              <div
+                key={i}
+                ref={el => { if (el) barsRef.current[i] = el; }}
+                className="flex-1 min-w-0"
+                style={{
+                  height: "1.5%",
+                  background: `linear-gradient(to top, hsla(${hue}, 100%, 50%, 0.04), hsla(${hue}, 100%, 55%, 0.1))`,
+                  clipPath: "polygon(1px 0, calc(100% - 1px) 0, 100% 100%, 0 100%)",
+                  willChange: "height, background, box-shadow",
+                }}
+              />
+            );
+          })}
+        </div>
 
       </div>{/* Fim da metade superior */}
 
       {/* ═══ METADE INFERIOR (50%): Capas + Metadados + Histórico ═══ */}
       <div className="h-1/2 flex flex-col min-h-0 relative z-10">
 
-      {/* Carrossel + Metadados */}
-      <div className="px-1 flex flex-col items-center justify-center gap-1.5 border-t border-border/15 overflow-hidden py-3 shrink-0">
-        <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
-        <CarouselErrorBoundary>
-          <CoverFlowCarousel
-            currentCover={coverError ? "" : track.cover}
-            prevCover={trackHistory.length > 0 ? trackHistory[0].albumArt || "" : ""}
-            nextCover={track.coverNext}
-            playing={playing}
-            transitionKey={transitionKey}
-          />
-        </CarouselErrorBoundary>
-        <div className="flex items-center gap-2 w-full relative z-10 -mt-8">
-          <MiniAudioBars active={playing} />
-          <div className="flex-1 min-w-0 space-y-0.5 text-center">
-            <p className="text-[11px] text-foreground font-display tracking-wider truncate leading-tight drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]">
-              {track.title}
-            </p>
-            <p className={`tracking-wider truncate leading-tight font-display ${track.artist === "SCANNING..." ? "text-[9px] text-muted-foreground/40" : "text-lg text-accent drop-shadow-[0_0_8px_hsl(var(--accent)/0.5)]"}`}>
-              {track.artist}
-            </p>
-          </div>
-          <div className="-scale-x-100">
+        {/* Carrossel + Metadados */}
+        <div className="px-1 flex flex-col items-center justify-center gap-1.5 border-t border-border/15 overflow-hidden py-3 shrink-0">
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+          <CarouselErrorBoundary>
+            <CoverFlowCarousel
+              currentCover={coverError ? "" : track.cover}
+              prevCover={trackHistory.length > 0 ? trackHistory[0].albumArt || "" : ""}
+              nextCover={track.coverNext}
+              playing={playing}
+              transitionKey={transitionKey}
+            />
+          </CarouselErrorBoundary>
+          <div className="flex items-center gap-2 w-full relative z-10 -mt-8">
             <MiniAudioBars active={playing} />
+            <div className="flex-1 min-w-0 space-y-0.5 text-center">
+              <p className="text-[11px] text-foreground font-display tracking-wider truncate leading-tight drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]">
+                {track.title}
+              </p>
+              <p className={`tracking-wider truncate leading-tight font-display ${track.artist === "SCANNING..." ? "text-[9px] text-muted-foreground/40" : "text-lg text-accent drop-shadow-[0_0_8px_hsl(var(--accent)/0.5)]"}`}>
+                {track.artist}
+              </p>
+            </div>
+            <div className="-scale-x-100">
+              <MiniAudioBars active={playing} />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Histórico de Transmissão — mt-auto ancora na base */}
-      <div className="overflow-y-auto hud-scroll mt-auto">
-        <TrackHistory tracks={trackHistory} />
-      </div>
+        {/* Histórico de Transmissão — mt-auto ancora na base */}
+        <div className="overflow-y-auto hud-scroll mt-auto">
+          <TrackHistory tracks={trackHistory} />
+        </div>
 
-      {/* Footer decorativo */}
-      <div className="px-2 py-0.5 flex justify-between text-[5px] tracking-[0.2em] text-muted-foreground/15 uppercase border-t border-border/8 shrink-0">
-        <span>CODEC: MP3</span>
-        <span>LATENCY: LOW</span>
-        <span>CIPHER: AES-256</span>
-      </div>
+        {/* Footer decorativo */}
+        <div className="px-2 py-0.5 flex justify-between text-[5px] tracking-[0.2em] text-muted-foreground/15 uppercase border-t border-border/8 shrink-0">
+          <span>CODEC: MP3</span>
+          <span>LATENCY: LOW</span>
+          <span>CIPHER: AES-256</span>
+        </div>
 
       </div>{/* Fim da metade inferior */}
 
