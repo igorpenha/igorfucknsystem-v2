@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,46 +9,108 @@ import NotFound from "./pages/NotFound";
 import PrintSource from "./pages/PrintSource";
 import PrintMonitoring from "./pages/PrintMonitoring";
 import Login from "./pages/Login";
+import Monitoring from "./pages/Monitoring";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
-const AppRoutes = () => {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem("ifs-auth") === "1");
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    if (authed && location.pathname === "/login") {
-      navigate("/", { replace: true });
-    } else if (!authed && location.pathname !== "/login") {
+    if (!loading && !currentUser && location.pathname !== "/login") {
       navigate("/login", { replace: true });
     }
-  }, [authed, navigate, location.pathname]);
+  }, [currentUser, loading, navigate, location.pathname]);
 
-  const handleLogin = () => {
-    sessionStorage.setItem("ifs-auth", "1");
-    setAuthed(true);
-  };
+  if (loading) {
+    return null; // Or a loading spinner
+  }
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("ifs-auth");
-    setAuthed(false);
-  };
+  return currentUser ? <>{children}</> : null;
+};
+
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser, loading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!loading && currentUser && location.pathname === "/login") {
+      navigate("/", { replace: true });
+    }
+  }, [currentUser, loading, navigate, location.pathname]);
+
+  if (loading) {
+    return null; // Or a loading spinner
+  }
+
+  return !currentUser ? <>{children}</> : null;
+};
+
+const AppRoutes = () => {
+  return (
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <RoutesWithAuth />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </AuthProvider>
+  );
+};
+
+const RoutesWithAuth = () => {
+  const { loginBypass, logout } = useAuth();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route path="/login" element={<Login onLogin={handleLogin} />} />
-          <Route path="/" element={<Index onLogout={handleLogout} />} />
-          <Route path="/print-source" element={<PrintSource />} />
-          <Route path="/print-monitoring" element={<PrintMonitoring />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <Login onLogin={loginBypass} />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Index onLogout={logout} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/print-source"
+        element={
+          <ProtectedRoute>
+            <PrintSource />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/print-monitoring"
+        element={
+          <ProtectedRoute>
+            <PrintMonitoring />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/monitoring"
+        element={
+          <ProtectedRoute>
+            <Monitoring />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 

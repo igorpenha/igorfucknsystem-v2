@@ -5,11 +5,13 @@ const path = require("path");
 const fs = require("fs/promises");
 const fsSync = require("fs");
 
+require("dotenv").config();
+
 const si = require("systeminformation");
 
 const app = express();
-const PORT = 4000;
-const ROOT_DIR = "D:\\FILES FOR WEB";
+const PORT = process.env.PORT || 4000;
+const ROOT_DIR = process.env.ROOT_DIR || "D:\\FILES FOR WEB";
 
 app.use(cors({ origin: "*" }));
 
@@ -136,7 +138,7 @@ app.get("/api/download", async (req, res) => {
 
 // ── GET /api/radio/now-playing ────────────────────────────
 
-const RADIO_DATA_DIR = "D:\\IGORFUCKNSYSTEM\\RADIODATA";
+const RADIO_DATA_DIR = process.env.RADIO_DATA_DIR || "D:\\IGORFUCKNSYSTEM\\RADIODATA";
 
 app.get("/api/radio/now-playing", async (_req, res) => {
   try {
@@ -200,6 +202,37 @@ app.get("/api/radio/artwork-next", (req, res) => serveArtwork("artwork_next", re
 // ── GET /api/network/scan ─────────────────────────────────
 
 const { exec } = require("child_process");
+
+app.use(express.json());
+
+app.post("/api/system/command", (req, res) => {
+  try {
+    const { command, secretKey } = req.body;
+
+    // Validar secret
+    const expectedSecret = process.env.COMMAND_SECRET;
+    if (!expectedSecret || secretKey !== expectedSecret) {
+      return res.status(401).json({ error: "Unauthorized: Invalid secret key" });
+    }
+
+    if (!command) {
+      return res.status(400).json({ error: "No command provided" });
+    }
+
+    // Executar comando no SO host
+    exec(command, (err, stdout, stderr) => {
+      res.json({
+        success: !err,
+        stdout: stdout || "",
+        stderr: stderr || err?.message || ""
+      });
+    });
+
+  } catch (err) {
+    console.error("POST /api/system/command error:", err);
+    res.status(500).json({ error: "Failed to execute command" });
+  }
+});
 
 app.get("/api/network/scan", (_req, res) => {
   try {
